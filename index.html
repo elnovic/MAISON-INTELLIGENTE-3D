@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maison intelligente IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: fiche de présentation d'un projet d'ingénierie, sobre et confiante
+   IDEA: la planche de concours d'architecte : titre, schéma, deux portes d'entrée
+   PICTURE: le schéma de la chaîne capteurs → ESP32 → actionneurs, avec la vision et le site
+   COLOUR and TYPE: blanc, graphite, couleurs du plan de câblage ; Figtree
+   LAYOUT: titre puis schéma, puis deux cartes d'accès, puis les trois problèmes */
+:root{color-scheme:light dark;--bg:light-dark(#f6f7f8,#111316);--ink:light-dark(#1a1e23,#eceef1);--mute:light-dark(#5f6873,#9aa3ad);--card:light-dark(#fff,#1a1d21);--line:light-dark(#e1e4e8,#2b3036)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif}
+.band{padding:clamp(28px,5vw,64px) max(5vw,16px);max-width:1240px;margin:0 auto}
+h1{font-size:clamp(32px,5vw,50px);line-height:1.05;margin:0 0 10px;font-weight:800;text-wrap:balance}
+.lead{font-size:17px;color:var(--mute);max-width:66ch;margin:0}
+.fig{position:relative;margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.fig svg{width:100%;height:auto;display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;margin-top:20px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;transition:transform .15s}
+a.card:hover{transform:translateY(-2px)}
+a.card:focus-visible{outline:2px solid #1f77b4;outline-offset:3px}
+a.card h2{margin:0 0 6px;font-size:21px}
+a.card p{margin:0;color:var(--mute)}
+a.card span{display:inline-block;margin-top:12px;font-weight:700}
+.trois{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;margin-top:14px}
+.trois div{border-top:3px solid var(--c);padding-top:10px}
+.trois h3{margin:0 0 4px;font-size:17px}.trois p{margin:0;color:var(--mute);font-size:15px}
+@media(prefers-reduced-motion:reduce){a.card{transition:none}}
+</style>
+</head>
+<body>
+<div class="band">
+  <h1>Maison intelligente IoT : confort, sécurité, économie</h1>
+  <p class="lead">Un seul programme ESP32 pour le virtuel et le réel. Le jumeau 3D simule le monde physique, le firmware décide, la caméra reconnaît les résidents, et le site de contrôle pilote la maison depuis un téléphone.</p>
+  <div class="fig">
+    <svg viewBox="0 0 960 250" role="img" aria-label="Chaîne : capteurs, ESP32, actionneurs ; caméra et PC vision ; broker MQTT ; jumeau 3D et site de contrôle">
+      <defs><marker id="f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#868e96"/></marker></defs>
+      <g font-family="Figtree,sans-serif" font-size="14" fill="currentColor">
+        <rect x="10" y="20" width="200" height="92" rx="12" fill="#1f77b4" opacity=".14"/><text x="24" y="46" font-weight="800">Capteurs</text><text x="24" y="68" font-size="12.5">Radar LD2410 · LDR · DHT22</text><text x="24" y="86" font-size="12.5">ILS porte · MQ-2 · énergie</text>
+        <rect x="280" y="20" width="170" height="92" rx="12" fill="#2b8a3e" opacity=".16"/><text x="296" y="50" font-weight="800">ESP32</text><text x="296" y="72" font-size="12.5">firmware unique</text><text x="296" y="90" font-size="12.5">décide localement</text>
+        <rect x="520" y="20" width="200" height="92" rx="12" fill="#e8590c" opacity=".14"/><text x="534" y="46" font-weight="800">Actionneurs</text><text x="534" y="68" font-size="12.5">Lampes · ventilateur (relais)</text><text x="534" y="86" font-size="12.5">chauffage · sirène · OLED</text>
+        <rect x="10" y="150" width="200" height="80" rx="12" fill="#7048e8" opacity=".14"/><text x="24" y="176" font-weight="800">Caméra + PC vision</text><text x="24" y="198" font-size="12.5">Python · OpenCV YuNet/SFace</text>
+        <rect x="280" y="150" width="170" height="80" rx="12" fill="#868e96" opacity=".16"/><text x="296" y="182" font-weight="800">Broker MQTT</text><text x="296" y="202" font-size="12.5">maison-ia/&lt;id&gt;/…</text>
+        <rect x="520" y="150" width="200" height="80" rx="12" fill="#868e96" opacity=".16"/><text x="534" y="176" font-weight="800">Jumeau 3D</text><text x="534" y="198" font-size="12.5">monde virtuel ou miroir</text>
+        <rect x="770" y="150" width="180" height="80" rx="12" fill="#868e96" opacity=".16"/><text x="784" y="176" font-weight="800">Site de contrôle</text><text x="784" y="198" font-size="12.5">téléphone · analyses</text>
+        <rect x="770" y="20" width="180" height="92" rx="12" fill="#c92a2a" opacity=".14"/><text x="784" y="46" font-weight="800">Énergie</text><text x="784" y="68" font-size="12.5">panneau solaire 6 V</text><text x="784" y="86" font-size="12.5">batterie · TP4056 · INA219</text>
+      </g>
+      <g stroke="#868e96" stroke-width="2" fill="none" marker-end="url(#f)">
+        <path d="M212 66H276"/><path d="M452 66H516"/><path d="M365 114V146"/><path d="M212 190H276"/><path d="M452 190H516"/><path d="M722 190H766"/><path d="M768 66H724"/>
+      </g>
+    </svg>
+  </div>
+  <div class="cards">
+    <a class="card" href="jumeau-3d/index.html"><h2>Jumeau numérique 3D</h2><p>La maison moderne, ses 19 composants IoT, le câblage animé, la caméra et la vision par ordinateur. Scénario de présentation intégré.</p><span>Ouvrir la 3D →</span></a>
+    <a class="card" href="site-controle/index.html"><h2>Site de contrôle</h2><p>Alarme, éclairage, climatisation, énergie, flux de la caméra et analyses en temps réel, sur téléphone ou ordinateur.</p><span>Ouvrir le site →</span></a>
+  </div>
+  <div class="trois">
+    <div style="--c:#f2a516"><h3>Confort</h3><p>Lumière selon la présence (radar mmWave) et la lumière du jour (LDR) ; ventilateur et chauffage avec hystérésis.</p></div>
+    <div style="--c:#e03131"><h3>Sécurité</h3><p>Reconnaissance des visages, contact de porte, détection de gaz, sirène et alerte Telegram avec photo.</p></div>
+    <div style="--c:#2b8a3e"><h3>Économie</h3><p>Énergie solaire indépendante, mode éco sur batterie faible, économie mesurée face à une maison sans automatisme.</p></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Bibliothèques utilisées (Wokwi les installe automatiquement)
+PubSubClient
+DHT sensor library for ESPx
+Adafruit GFX Library
+Adafruit SSD1306

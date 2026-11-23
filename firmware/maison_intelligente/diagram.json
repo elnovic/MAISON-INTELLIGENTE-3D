@@ -1,0 +1,548 @@
+{
+  "version": 1,
+  "author": "Projet Maison Intelligente IoT",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pres_salon",
+      "top": -170,
+      "left": -330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pres_chambre",
+      "top": -170,
+      "left": -200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -190,
+      "left": -60,
+      "attrs": {
+        "temperature": "29",
+        "humidity": "55"
+      }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": 40,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_gaz",
+      "top": 150,
+      "left": -330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_solaire",
+      "top": 150,
+      "left": -230,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_batterie",
+      "top": 150,
+      "left": -130,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "porte",
+      "top": 280,
+      "left": -300,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_alarme",
+      "top": 270,
+      "left": -180,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_led_salon",
+      "top": -120,
+      "left": 170,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_salon",
+      "top": -160,
+      "left": 260,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_led_chambre",
+      "top": -60,
+      "left": 170,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_chambre",
+      "top": -100,
+      "left": 260,
+      "attrs": {
+        "color": "yellow"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_led_chauffage",
+      "top": 0,
+      "left": 170,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_chauffage",
+      "top": -40,
+      "left": 260,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_led_armee",
+      "top": 60,
+      "left": 170,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_armee",
+      "top": 20,
+      "left": 260,
+      "attrs": {
+        "color": "orange"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_led_alarme",
+      "top": 120,
+      "left": 170,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_alarme",
+      "top": 80,
+      "left": 260,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-relay-module",
+      "id": "relais_ventilo",
+      "top": 160,
+      "left": 170,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_ventilo",
+      "top": 250,
+      "left": 330,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_ventilo",
+      "top": 200,
+      "left": 420,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "sirene",
+      "top": -230,
+      "left": 180,
+      "attrs": {
+        "volume": "0.1"
+      }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": -120,
+      "left": 330,
+      "attrs": {
+        "i2cAddress": "0x3c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:19",
+      "r_led_salon:1",
+      "green",
+      []
+    ],
+    [
+      "r_led_salon:2",
+      "led_salon:A",
+      "green",
+      []
+    ],
+    [
+      "led_salon:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:18",
+      "r_led_chambre:1",
+      "green",
+      []
+    ],
+    [
+      "r_led_chambre:2",
+      "led_chambre:A",
+      "green",
+      []
+    ],
+    [
+      "led_chambre:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:5",
+      "r_led_chauffage:1",
+      "green",
+      []
+    ],
+    [
+      "r_led_chauffage:2",
+      "led_chauffage:A",
+      "green",
+      []
+    ],
+    [
+      "led_chauffage:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:4",
+      "r_led_armee:1",
+      "green",
+      []
+    ],
+    [
+      "r_led_armee:2",
+      "led_armee:A",
+      "green",
+      []
+    ],
+    [
+      "led_armee:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:16",
+      "r_led_alarme:1",
+      "green",
+      []
+    ],
+    [
+      "r_led_alarme:2",
+      "led_alarme:A",
+      "green",
+      []
+    ],
+    [
+      "led_alarme:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pres_salon:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pres_salon:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pres_salon:OUT",
+      "esp:27",
+      "orange",
+      []
+    ],
+    [
+      "pres_chambre:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pres_chambre:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pres_chambre:OUT",
+      "esp:26",
+      "orange",
+      []
+    ],
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht:SDA",
+      "esp:15",
+      "orange",
+      []
+    ],
+    [
+      "ldr:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "ldr:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "ldr:AO",
+      "esp:34",
+      "orange",
+      []
+    ],
+    [
+      "pot_gaz:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot_gaz:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot_gaz:SIG",
+      "esp:35",
+      "orange",
+      []
+    ],
+    [
+      "pot_solaire:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot_solaire:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot_solaire:SIG",
+      "esp:32",
+      "orange",
+      []
+    ],
+    [
+      "pot_batterie:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot_batterie:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot_batterie:SIG",
+      "esp:33",
+      "orange",
+      []
+    ],
+    [
+      "porte:2",
+      "esp:13",
+      "blue",
+      []
+    ],
+    [
+      "porte:1",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "btn_alarme:1.l",
+      "esp:14",
+      "blue",
+      []
+    ],
+    [
+      "btn_alarme:2.r",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "relais_ventilo:VCC",
+      "esp:5V",
+      "red",
+      []
+    ],
+    [
+      "relais_ventilo:GND",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "relais_ventilo:IN",
+      "esp:23",
+      "green",
+      []
+    ],
+    [
+      "relais_ventilo:COM",
+      "esp:5V",
+      "red",
+      []
+    ],
+    [
+      "relais_ventilo:NO",
+      "r_ventilo:1",
+      "green",
+      []
+    ],
+    [
+      "r_ventilo:2",
+      "led_ventilo:A",
+      "green",
+      []
+    ],
+    [
+      "led_ventilo:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "sirene:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "sirene:2",
+      "esp:25",
+      "purple",
+      []
+    ],
+    [
+      "oled:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "oled:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "oled:SCL",
+      "esp:22",
+      "yellow",
+      []
+    ],
+    [
+      "oled:SDA",
+      "esp:21",
+      "yellow",
+      []
+    ],
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

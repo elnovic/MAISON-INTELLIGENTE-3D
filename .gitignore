@@ -1,0 +1,20 @@
+# Secrets et données personnelles (jamais sur GitHub)
+firmware/maison_intelligente/secrets.h
+vision/config.ini
+vision/donnees/*
+!vision/donnees/.gitkeep
+
+# Modèles téléchargés
+vision/modeles/*.onnx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Divers
+.DS_Store
+Thumbs.db
+.vscode/
+build/

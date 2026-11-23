@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jumeau numérique — Maison intelligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: salle de supervision d'un bâtiment connecté : précise, calme, technique
+   IDEA: la maquette d'architecte en coupe, avec son réseau IoT apparent comme sur un plan de câblage
+   PICTURE: la maison 3D plein cadre ; composants agrandis et cliquables ; fils animés ; vue caméra IA en incrustation
+   COLOUR and TYPE: graphite et béton clair ; couleurs du plan de câblage (bleu capteur, orange actionneur, vert contrôleur, rouge énergie, violet vision) ; Figtree
+   LAYOUT: barre d'état en haut, scène à gauche, panneau 360px à droite ; sous 820px le panneau passe sous la scène */
+:root{color-scheme:light dark;--bg:light-dark(#eef0f2,#121417);--panel:light-dark(#ffffff,#1a1d21);--ink:light-dark(#1b1f24,#e9ebee);--mute:light-dark(#5f6873,#9aa3ad);--line:light-dark(#dde1e6,#2c3137);--chip:light-dark(#f1f3f5,#23272c);
+--capteur:#1f77b4;--actionneur:#e8590c;--controleur:#2b8a3e;--energie:#c92a2a;--vision:#7048e8;--ok:#2b8a3e;--warn:#f08c00;--err:#e03131}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 Figtree,system-ui,sans-serif;overflow:hidden}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+#app{display:grid;grid-template-rows:auto minmax(0,1fr);height:100vh;height:100dvh}
+header{display:flex;align-items:center;gap:14px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:800;white-space:nowrap}
+header h1 small{font-weight:600;color:var(--mute);margin-left:6px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pill{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:#868e96}
+.pill.ok i{background:var(--ok)}.pill.warn i{background:var(--warn)}.pill.err i{background:var(--err)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+#scene{position:relative;overflow:hidden;background:#0d1117}
+#scene canvas{display:block}
+#labels{position:absolute;inset:0;pointer-events:none}
+.tag{font:600 11px/1.2 Figtree,sans-serif;color:#fff;background:rgba(16,18,22,.82);padding:3px 7px 3px 6px;border-radius:5px;white-space:nowrap;border-left:3px solid var(--c,#888);transform:translateY(-16px)}
+.tag b{font-weight:800;margin-left:4px;font-family:"JetBrains Mono",monospace;font-size:10.5px}
+.tag.room{background:none;border:0;color:rgba(255,255,255,.85);font-size:12.5px;text-shadow:0 1px 3px #000;transform:none}
+.tag.person{border-left-color:#fff}
+#tools{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.bar{display:flex;flex-wrap:wrap;gap:4px;background:rgba(18,20,24,.78);padding:4px;border-radius:9px}
+.bar button,.bar label{background:none;border:0;color:#e9ebee;border-radius:6px;padding:6px 9px;font:600 12px Figtree,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;min-height:32px}
+.bar button:hover,.bar label:hover{background:rgba(255,255,255,.1)}
+.bar input{accent-color:#fff}
+#pip{position:absolute;left:12px;bottom:12px;width:336px;height:252px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 30px rgba(0,0,0,.4);pointer-events:none}
+#pip header{position:absolute;inset:0 0 auto 0;background:linear-gradient(rgba(0,0,0,.75),transparent);border:0;color:#fff;font-size:11.5px;padding:6px 9px;display:flex;justify-content:space-between;gap:8px}
+#pip header b{display:flex;align-items:center;gap:6px}
+#pip header b::before{content:"";width:7px;height:7px;border-radius:50%;background:#ff3b30;animation:rec 1.2s infinite}
+@keyframes rec{50%{opacity:.2}}
+#pip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+#pipFoot{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.8));color:#fff;font-size:11px;padding:14px 9px 6px}
+.det{position:absolute;border:2px solid;border-radius:3px}
+.det span{position:absolute;left:-2px;bottom:100%;font:700 10.5px "JetBrains Mono",monospace;color:#fff;padding:2px 5px;white-space:nowrap;border-radius:3px 3px 0 0}
+#info{position:absolute;right:12px;top:12px;width:290px;background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px;display:none}
+#info.on{display:block}
+#info h3{margin:0 0 2px;font-size:16px}
+#info .cat{font-size:11px;font-weight:800;text-transform:none;color:var(--c)}
+#info dl{display:grid;grid-template-columns:82px 1fr;gap:4px 10px;margin:10px 0 0;font-size:13px}
+#info dt{color:var(--mute)}#info dd{margin:0}
+#info button{position:absolute;right:8px;top:8px;border:0;background:none;color:var(--mute);font-size:18px;cursor:pointer;width:32px;height:32px}
+#caption{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:min(560px,calc(100% - 380px));background:rgba(12,14,17,.9);color:#fff;padding:11px 16px;border-radius:10px;font-size:15px;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
+#caption.on{opacity:1}
+#toast{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;width:290px;pointer-events:none}
+.notif{background:#fff;color:#1b1f24;border-radius:12px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-size:13px;display:grid;grid-template-columns:28px 1fr;gap:9px;animation:in .3s ease}
+.notif b{display:block;font-size:11.5px;color:#229ed9}.notif svg{width:28px;height:28px}
+@keyframes in{from{transform:translateY(8px);opacity:0}}
+#alarmGlow{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px rgba(255,0,0,.55);opacity:0;transition:opacity .2s}
+#loading{position:absolute;inset:0;display:grid;place-items:center;color:#9aa3ad;text-align:center;padding:20px}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:14px 14px 30px}
+h2{font-size:12px;font-weight:800;margin:18px 0 8px;color:var(--mute)}
+h2:first-child{margin-top:0}
+.seg{display:flex;background:var(--chip);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--ink);padding:7px 5px;border-radius:7px;font:600 12.5px Figtree,sans-serif;cursor:pointer;min-height:34px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.seg.col{flex-direction:column}.seg.col button{text-align:left;padding:8px 10px}
+.seg.col button small{display:block;font-weight:400;opacity:.75;font-size:11.5px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--capteur);outline-offset:2px}
+.note{font-size:12px;color:var(--mute);margin:7px 0 0}
+.note.warn{color:var(--warn)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tile{background:var(--chip);border-radius:9px;padding:7px 9px}
+.tile small{display:block;color:var(--mute);font-size:11px;font-weight:600}
+.tile strong{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile.span3{grid-column:span 3;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#tAlarme.armee{background:#e6f4ea;color:#14532d}#tAlarme.verification{background:#fff3d6;color:#7a4b00}
+#tAlarme.declenchee{background:var(--err);color:#fff}
+#tAlarme small{color:inherit;opacity:.8}
+.row{display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:center;margin:7px 0}
+.row>span{font-size:12.5px;font-weight:600}
+.row .val{font-weight:400;color:var(--mute);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--ink)}
+input[type=text]{width:100%;font:14px Figtree,sans-serif;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:8px;padding:8px 12px;font:600 12.5px Figtree,sans-serif;cursor:pointer;min-height:36px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.red{background:var(--err);border-color:var(--err);color:#fff}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+a.btn{text-decoration:none;display:inline-flex;align-items:center}
+#log{list-style:none;margin:0;padding:0;font-size:12px;max-height:200px;overflow-y:auto}
+#log li{padding:5px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:56px 1fr;gap:6px}
+#log time{color:var(--mute);font-variant-numeric:tabular-nums}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px;font-size:12px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-right:6px;vertical-align:-1px}
+.disabled{opacity:.45;pointer-events:none}
+.hide{display:none!important}
+@media(max-width:820px){
+  body{overflow:auto}
+  #app{height:auto}
+  main{grid-template-columns:1fr}
+  #scene{height:62vh}
+  aside{border-left:0;border-top:1px solid var(--line)}
+  #pip{width:200px;height:150px}
+  #caption{width:calc(100% - 24px);bottom:170px;font-size:13.5px}
+  #info{left:12px;right:12px;width:auto;top:auto;bottom:12px}
+  #toast{display:none}
+  .pills{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){#pip header b::before{animation:none}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="../plan/plan.js"></script>
+<script src="../web/maison-bus.js"></script>
+<script src="../web/firmware-emule.js"></script>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>Maison intelligente IoT<small>Jumeau numérique 3D</small></h1>
+  <div class="pills">
+    <span class="pill" id="pBus"><i></i><span>Réseau</span></span>
+    <span class="pill" id="pEsp"><i></i><span>Cerveau</span></span>
+    <span class="pill" id="pVision"><i></i><span>Vision</span></span>
+  </div>
+</header>
+<main>
+  <div id="scene">
+    <div id="loading">Chargement de la maison 3D…</div>
+    <div id="labels"></div>
+    <div id="alarmGlow"></div>
+    <div id="tools">
+      <div class="bar" role="group" aria-label="Vues">
+        <button data-view="ensemble">Ensemble</button><button data-view="sejour">Séjour</button><button data-view="chambre">Chambre</button>
+        <button data-view="entree">Entrée</button><button data-view="technique">Technique</button><button data-view="bureau">PC vision</button>
+      </div>
+      <div class="bar" role="group" aria-label="Calques">
+        <label><input type="checkbox" id="cReseau" checked> Réseau IoT</label>
+        <label><input type="checkbox" id="cZones" checked> Zones</label>
+        <label><input type="checkbox" id="cTags" checked> Étiquettes</label>
+        <label><input type="checkbox" id="cToit"> Toit</label>
+      </div>
+    </div>
+    <div id="pip">
+      <img id="pipImg" class="hide" alt="Flux de la webcam analysé par Python et OpenCV">
+      <div id="pipDet"></div>
+      <header><b>Caméra entrée</b><span id="pipSrc">Vision IA · scène 3D</span></header>
+      <div id="pipFoot">YuNet (détection) + SFace (reconnaissance) · seuil 0,363</div>
+    </div>
+    <div id="info"><button aria-label="Fermer">×</button><div id="infoBody"></div></div>
+    <div id="toast"></div>
+    <div id="caption"></div>
+  </div>
+
+  <aside>
+    <h2>Mode de fonctionnement</h2>
+    <div class="seg col" id="segMode">
+      <button data-mode="jumeau"><b>Simulation · firmware ESP32</b><small>La 3D envoie les capteurs virtuels, le vrai programme (Wokwi) décide</small></button>
+      <button data-mode="miroir"><b>Miroir de la maquette FabLab</b><small>La 3D reproduit en temps réel les capteurs réels</small></button>
+      <button data-mode="local"><b>Hors ligne (secours)</b><small>Sans Internet : logique du firmware émulée dans le navigateur</small></button>
+    </div>
+    <div class="row" style="margin-top:10px"><span>ID maison</span><input type="text" id="maisonId" autocomplete="off" spellcheck="false"></div>
+    <p class="note" id="modeNote"></p>
+
+    <h2>État de la maison (reçu de l'ESP32)</h2>
+    <div class="tiles">
+      <div class="tile"><small>Température</small><strong id="vT">–</strong></div>
+      <div class="tile"><small>Humidité</small><strong id="vH">–</strong></div>
+      <div class="tile"><small>Lumière ext.</small><strong id="vL">–</strong></div>
+      <div class="tile"><small>Solaire</small><strong id="vS">–</strong></div>
+      <div class="tile"><small>Conso</small><strong id="vC">–</strong></div>
+      <div class="tile"><small>Batterie</small><strong id="vB">–</strong></div>
+      <div class="tile span3"><div><small>Présence</small><strong id="vP" style="font-size:14px">–</strong></div><div style="text-align:right"><small>Économie vs sans IA</small><strong id="vE">–</strong></div></div>
+      <div class="tile span3" id="tAlarme"><div><small>Alarme</small><strong id="vA">–</strong></div><small id="vPorte">–</small></div>
+    </div>
+    <div class="btns" style="margin-top:8px">
+      <button class="btn primary" id="bArmer">Armer l'alarme</button><button class="btn" id="bDesarmer">Désarmer</button>
+      <a class="btn" id="lienSite" href="../site-controle/index.html" target="_blank" rel="noopener">Site de contrôle ↗</a>
+    </div>
+
+    <div id="monde">
+      <h2>Démonstration</h2>
+      <button class="btn red" id="bScenario" style="width:100%">▶ Lancer le scénario de présentation</button>
+      <h2>Monde simulé (entrées des capteurs)</h2>
+      <div class="row"><span>Marie (résidente)</span><div class="seg" id="segMarie"><button data-p="absent" class="on">Absente</button><button data-p="dehors">Porte</button><button data-p="sejour">Séjour</button><button data-p="chambre">Chambre</button></div></div>
+      <div class="row"><span>Inconnu</span><div class="seg" id="segIntrus"><button data-p="absent" class="on">Absent</button><button data-p="porte">Porte</button><button data-p="fenetre">Baie vitrée</button></div></div>
+      <div class="row"><span>Heure <span class="val" id="oHeure"></span></span><input type="range" id="sHeure" min="0" max="24" step="0.25" value="14"></div>
+      <div class="row"><span>Temp. ext. <span class="val" id="oText"></span></span><input type="range" id="sText" min="5" max="40" value="31"></div>
+      <div class="row"><span>Batterie <span class="val" id="oBat"></span></span><input type="range" id="sBat" min="0" max="100" value="80"></div>
+      <div class="btns"><button class="btn" id="bGaz">Simuler une fuite de gaz</button></div>
+    </div>
+
+    <h2>Caméra IA</h2>
+    <div class="seg" id="segCam"><button data-c="scene" class="on">Personnes 3D</button><button data-c="webcam">Webcam réelle (Python)</button></div>
+    <div class="row" id="rowFlux"><span>Flux Python</span><input type="text" id="fluxUrl" value="http://localhost:8081/flux" spellcheck="false"></div>
+    <p class="note" id="camNote">Les avatars passent devant la caméra virtuelle ; le résultat « connu / inconnu » est envoyé à l'ESP32 comme le ferait le programme Python.</p>
+
+    <h2>Légende du réseau IoT</h2>
+    <div class="legend">
+      <span style="--c:var(--capteur)">Capteur</span><span style="--c:var(--actionneur)">Actionneur</span>
+      <span style="--c:var(--controleur)">Contrôleur ESP32</span><span style="--c:var(--energie)">Énergie</span>
+      <span style="--c:var(--vision)">Vision par ordinateur</span>
+    </div>
+    <p class="note">Composants agrandis pour la lisibilité. Cliquez sur un composant pour voir son rôle, sa broche et sa valeur en direct.</p>
+
+    <h2>Journal</h2>
+    <ul id="log"></ul>
+  </aside>
+</main>
+</div>
+
+<script>
+setTimeout(() => { const l = document.getElementById('loading'); if (l) l.textContent = 'La bibliothèque 3D (Three.js) n\'a pas pu être chargée : une connexion Internet est nécessaire au premier chargement.'; }, 12000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+{
+const PLAN = window.PLAN, H = PLAN.hauteur_murs;
+const $ = id => document.getElementById(id);
+const COUL = { capteur:0x1f77b4, actionneur:0xe8590c, controleur:0x2b8a3e, energie:0xc92a2a, vision:0x7048e8 };
+const NOM_ALARME = { desarmee:'Désarmée', armee:'Armée', verification:'Vérification…', declenchee:'ALARME' };
+const NOM_CAUSE = { porte:'porte ouverte', presence:'présence détectée', intrus:'visage inconnu', gaz:'gaz détecté' };
+const OBJ = Object.fromEntries(PLAN.objets.map(o => [o.id, o]));
+
+// =====================================================================
+//  SCÈNE
+// =====================================================================
+const host = $('scene');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+host.prepend(renderer.domElement);
+const tagRenderer = new CSS2DRenderer({ element:$('labels') });
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 200);
+camera.position.set(-8, 16, 23);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(6, 0, 5); controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 2; controls.maxDistance = 60;
+const hemi = new THREE.HemisphereLight(0xdfefff, 0x4a4438, 1); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.5);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left:-18, right:18, top:18, bottom:-18, near:1, far:80 });
+sun.target.position.set(6, 0, 5); scene.add(sun, sun.target);
+const SKY_DAY = new THREE.Color(0xbcdcf2), SKY_DUSK = new THREE.Color(0xe9a77a), SKY_NIGHT = new THREE.Color(0x0a1020);
+scene.background = SKY_DAY.clone(); scene.fog = new THREE.Fog(0xbcdcf2, 45, 120);
+
+function tex(draw, rep = [1, 1], w = 256, h = 256) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+const planches = (base, joint) => (g, w, h) => { g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 32) { g.fillStyle = `rgba(0,0,0,${0.03 + Math.random() * 0.08})`; g.fillRect(0, y, w, 32); g.fillStyle = joint; g.fillRect(0, y, w, 2); g.fillRect(Math.random() * w, y, 2, 32); } };
+const T = {
+  parquet: tex(planches('#c39a6d', 'rgba(70,40,20,.35)'), [3, 3]), deck: tex(planches('#8a6446', 'rgba(30,15,5,.5)'), [4, 2]),
+  bardage: tex((g, w, h) => { g.fillStyle = '#946642'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 16) { g.fillStyle = 'rgba(40,20,5,.45)'; g.fillRect(x, 0, 3, h); } }, [3, 1]),
+  carrelage: tex((g, w, h) => { g.fillStyle = '#d8d5ce'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b8b4ab'; g.lineWidth = 3; for (let i = 0; i <= w; i += 64) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } }, [4, 4]),
+  herbe: tex((g, w, h) => { g.fillStyle = '#6c964c'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(${30 + Math.random() * 60},${90 + Math.random() * 70},30,.5)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, [26, 26]),
+  solaire: tex((g, w, h) => { g.fillStyle = '#14254a'; g.fillRect(0, 0, w, h); g.strokeStyle = '#8fa6c9'; g.lineWidth = 2; for (let i = 0; i <= w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); } for (let j = 0; j <= h; j += 42) { g.beginPath(); g.moveTo(0, j); g.lineTo(w, j); g.stroke(); } }),
+};
+const mat = o => new THREE.MeshStandardMaterial(Object.assign({ roughness:0.8 }, o));
+const M = {
+  mur: mat({ color:0xf2f0eb }), beton: mat({ color:0xb5b2ab }), sombre: mat({ color:0x2a2e33, roughness:0.5 }),
+  verre: new THREE.MeshStandardMaterial({ color:0x9cc9e0, transparent:true, opacity:0.2, roughness:0.05, metalness:0.1, depthWrite:false }),
+  parquet: mat({ map:T.parquet }), carrelage: mat({ map:T.carrelage }), deck: mat({ map:T.deck }), bardage: mat({ map:T.bardage }),
+  herbe: mat({ map:T.herbe, roughness:1 }), eau: new THREE.MeshStandardMaterial({ color:0x3fb6d8, transparent:true, opacity:0.82, roughness:0.08 }),
+  tissu: mat({ color:0x55697a }), tissu2: mat({ color:0xd8d2c4 }), blanc: mat({ color:0xffffff, roughness:0.35 }),
+  bois: mat({ color:0x7a5236, roughness:0.6 }), metal: mat({ color:0xa3aab1, metalness:0.75, roughness:0.3 }),
+  solaire: mat({ map:T.solaire, roughness:0.25, metalness:0.4 }), feuille: mat({ color:0x4f7d3a }), tronc: mat({ color:0x5c4330 }),
+  pcbBleu: mat({ color:0x1d4f91, roughness:0.5 }), pcbNoir: mat({ color:0x15171a, roughness:0.5 }), pcbViolet: mat({ color:0x5b2a86, roughness:0.5 }),
+  or: mat({ color:0xd4a72c, metalness:0.9, roughness:0.25 }), vertBorn: mat({ color:0x1e7b3c }), orange: mat({ color:0xd9772b }),
+  vert18650: mat({ color:0x2e9e5b, roughness:0.4 }),
+};
+const maison = new THREE.Group(); scene.add(maison);
+function box(w, h, d, m, x, y, z, parent = maison, ombre = true) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z);
+  o.castShadow = ombre; o.receiveShadow = true; parent.add(o); return o;
+}
+function cyl(rt, rb, h, m, parent, seg = 20) { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); o.castShadow = true; parent.add(o); return o; }
+const tags = [];
+function etiquette(texte, x, y, z, cls = 'tag', parent = scene) {
+  const el = document.createElement('div'); el.className = cls; el.textContent = texte;
+  const o = new CSS2DObject(el); o.position.set(x, y, z); parent.add(o); tags.push(o); return o;
+}
+
+// ---------- Murs et pièces depuis plan/plan.js ----------
+for (const m of PLAN.murs) {
+  const [x1, z1] = m.de, [x2, z2] = m.a, horiz = z1 === z2, L = horiz ? x2 - x1 : z2 - z1;
+  const th = m.ext ? PLAN.epaisseur_ext : PLAN.epaisseur_int, matMur = m.bardage ? M.bardage : M.mur;
+  const piece = (a, b, y0, y1) => {
+    if (b - a < 0.01 || y1 - y0 < 0.01) return;
+    const len = b - a, mid = (a + b) / 2, h = y1 - y0;
+    if (horiz) box(len, h, th, matMur, x1 + mid, y0 + h / 2, z1); else box(th, h, len, matMur, x1, y0 + h / 2, z1 + mid);
+  };
+  let cur = 0;
+  for (const o of [...m.ouvertures].sort((p, q) => p.a - q.a)) {
+    piece(cur, o.a, 0, H); piece(o.a, o.b, 0, o.y0); piece(o.a, o.b, o.y1, H);
+    if (o.type === 'fenetre' || o.type === 'baie') {
+      const len = o.b - o.a, mid = (o.a + o.b) / 2, h = o.y1 - o.y0;
+      const g = horiz ? box(len, h, 0.03, M.verre, x1 + mid, o.y0 + h / 2, z1, maison, false) : box(0.03, h, len, M.verre, x1, o.y0 + h / 2, z1 + mid, maison, false);
+      g.add(new THREE.LineSegments(new THREE.EdgesGeometry(g.geometry), new THREE.LineBasicMaterial({ color:0x2a2e33 })));
+    }
+    cur = o.b;
+  }
+  piece(cur, L, 0, H);
+}
+const SOLS = { parquet:M.parquet, carrelage:M.carrelage, beton:M.beton };
+for (const p of PLAN.pieces) {
+  const f = box(p.x1 - p.x0, 0.06, p.z1 - p.z0, SOLS[p.sol], (p.x0 + p.x1) / 2, 0.03, (p.z0 + p.z1) / 2, maison, false);
+  etiquette(p.nom, (p.x0 + p.x1) / 2, 0.08, (p.z0 + p.z1) / 2 + 0.6, 'tag room');
+}
+const [LW, LD] = PLAN.emprise;
+box(LW + 0.6, 0.2, LD + 0.6, M.beton, LW / 2, -0.1, LD / 2, maison, false);
+const sol = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), M.herbe); sol.rotation.x = -Math.PI / 2; sol.position.set(6, -0.2, 6); sol.receiveShadow = true; scene.add(sol);
+box(7.6, 0.12, 3.2, M.deck, 3.4, -0.08, 10.7, maison, false);
+box(5.4, 0.1, 3, M.beton, 3, -0.15, 14.2, maison, false); box(5, 0.05, 2.6, M.eau, 3, -0.06, 14.2, maison, false);
+for (let i = 0; i < 6; i++) box(1, 0.06, 0.6, M.beton, 8.25, -0.15, 9.8 + i * 0.9, maison, false);
+const toit = new THREE.Group(); maison.add(toit);
+box(LW + 1, 0.3, LD + 1, M.mur, LW / 2, H + 0.15, LD / 2, toit); toit.visible = false;
+for (const [x, z, s] of [[-4, 2, 1.2], [-5, 9, 1], [15, 1, 1.3], [16, 11, 1], [11, 16, 0.9], [-3, 16, 1.1]]) {
+  box(0.25 * s, 1.6 * s, 0.25 * s, M.tronc, x, 0.6 * s, z);
+  const c = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2 * s, 1), M.feuille); c.position.set(x, 2.1 * s, z); c.castShadow = true; scene.add(c);
+}
+
+// ---------- Mobilier ----------
+box(3, 0.9, 0.6, M.blanc, 1.7, 0.45, 3.9); box(3, 0.04, 0.62, M.sombre, 1.7, 0.92, 3.9);
+box(1.8, 0.9, 0.8, M.bois, 1.9, 0.45, 5.1); box(1.9, 0.04, 0.9, M.blanc, 1.9, 0.92, 5.1);
+box(1.6, 0.05, 0.9, M.bois, 1.7, 0.75, 7.3);
+for (const [x, z] of [[1.05, 6.9], [2.35, 6.9], [1.05, 7.7], [2.35, 7.7]]) box(0.05, 0.75, 0.05, M.sombre, x, 0.37, z);
+for (const [x, z] of [[1.3, 6.55], [2.1, 6.55], [1.3, 8.05], [2.1, 8.05]]) { box(0.45, 0.06, 0.45, M.tissu2, x, 0.46, z); box(0.45, 0.45, 0.06, M.tissu2, x, 0.7, z + (z < 7 ? -0.2 : 0.2)); }
+box(0.9, 0.42, 2.3, M.tissu, 4.1, 0.25, 7.8); box(0.22, 0.45, 2.3, M.tissu, 3.75, 0.65, 7.8);
+box(2.2, 0.02, 1.6, M.tissu2, 5.3, 0.07, 7.8, maison, false); box(0.6, 0.35, 1.0, M.bois, 5.3, 0.2, 7.8);
+box(0.4, 0.5, 1.8, M.sombre, 6.7, 0.25, 7.8); box(0.06, 0.72, 1.25, M.sombre, 6.86, 1.35, 7.8);
+box(1.6, 0.45, 2.0, M.tissu2, 2.5, 0.25, 1.15); box(1.7, 0.9, 0.1, M.bois, 2.5, 0.5, 0.15); box(1.5, 0.12, 0.35, M.blanc, 2.5, 0.53, 0.45);
+box(0.45, 0.5, 0.4, M.bois, 1.3, 0.25, 0.4); box(0.45, 0.5, 0.4, M.bois, 3.7, 0.25, 0.4); box(0.6, 2.2, 1.6, M.bois, 4.6, 1.1, 2.4);
+box(1.7, 0.55, 0.75, M.blanc, 6.0, 0.28, 0.5); box(0.5, 0.85, 0.45, M.blanc, 7.65, 0.42, 2.4);
+box(1.2, 0.45, 0.4, M.bois, 7.4, 0.23, 7.4);
+
+// =====================================================================
+//  COMPOSANTS IoT (modèles détaillés, agrandis pour la lisibilité)
+// =====================================================================
+const D = {};           // références animées
+const cliquables = [];  // pour le clic
+const pivotPorte = new THREE.Group(); pivotPorte.position.set(7.75, 0, 9); maison.add(pivotPorte);
+box(1.0, 2.2, 0.06, M.bois, 0.5, 1.1, 0, pivotPorte); box(0.04, 0.3, 0.06, M.metal, 0.88, 1.05, 0.06, pivotPorte);
+D.porte = { pivot:pivotPorte, a:0 };
+
+function led(parent, x, y, z, couleur, r = 0.015) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), new THREE.MeshStandardMaterial({ color:couleur, emissive:couleur, emissiveIntensity:0.2 }));
+  m.position.set(x, y, z); parent.add(m); return m;
+}
+function broches(parent, n, x0, y, z, pas = 0.03) { for (let i = 0; i < n; i++) box(0.008, 0.05, 0.008, M.or, x0 + i * pas, y, z, parent, false); }
+function zoneCone(rayon, longueur, couleur) {
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(rayon, longueur, 36, 1, true),
+    new THREE.MeshBasicMaterial({ color:couleur, transparent:true, opacity:0.05, side:THREE.DoubleSide, depthWrite:false }));
+  cone.rotation.x = -Math.PI / 2; cone.position.z = longueur / 2; cone.userData.zone = true; return cone;
+}
+const zones = [];
+
+const MODELES = {
+  ld2410(g, o) {
+    box(0.38, 0.22, 0.025, M.blanc, 0, 0, 0.012, g);
+    box(0.34, 0.17, 0.02, M.pcbBleu, 0, 0, 0.035, g);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) box(0.05, 0.035, 0.005, M.or, -0.08 + i * 0.06, 0.03 - j * 0.055, 0.047, g, false);
+    box(0.06, 0.06, 0.01, M.pcbNoir, 0.12, 0, 0.05, g); broches(g, 5, -0.06, -0.1, 0.035);
+    const l = led(g, 0.14, 0.06, 0.05, 0x3aa0ff); D['led_' + o.id] = l;
+    const pivot = new THREE.Group(); pivot.rotation.x = 0.5; const z = zoneCone(2.7, 4.4, 0x3aa0ff); pivot.add(z); g.add(pivot);
+    D['zone_' + o.id] = z; zones.push(pivot);
+  },
+  dht22(g) {
+    box(0.17, 0.27, 0.08, M.blanc, 0, 0, 0.04, g);
+    for (let i = 0; i < 6; i++) box(0.12, 0.012, 0.005, M.sombre, 0, 0.08 - i * 0.03, 0.082, g, false);
+    broches(g, 4, -0.045, -0.16, 0.04);
+  },
+  ldr(g) {
+    box(0.28, 0.11, 0.015, M.pcbBleu, 0, 0, 0.008, g);
+    const tete = cyl(0.04, 0.04, 0.03, M.orange, g); tete.rotation.x = Math.PI / 2; tete.position.set(0.09, 0, 0.03);
+    box(0.06, 0.06, 0.04, M.pcbBleu, -0.03, 0, 0.03, g); broches(g, 4, -0.13, -0.03, 0.01, 0.025);
+  },
+  mq2(g) {
+    box(0.24, 0.015, 0.24, M.pcbBleu, 0, -0.008, 0, g);
+    const capot = cyl(0.085, 0.085, 0.1, M.metal, g); capot.position.y = -0.065;
+    const anneau = cyl(0.095, 0.095, 0.02, M.sombre, g); anneau.position.y = -0.025;
+    D.ledGaz = led(g, 0.09, -0.02, 0.09, 0xff3b30);
+  },
+  ils(g) {
+    box(0.15, 0.045, 0.045, M.blanc, 0, 0, 0.03, g);
+    const mobile = box(0.15, 0.045, 0.045, M.blanc, 0.82, 2.0, 0.07, pivotPorte); mobile.userData.objet = OBJ.ils_porte; cliquables.push(mobile);
+  },
+  camera(g, o) {
+    box(0.08, 0.16, 0.1, M.blanc, 0, 0.05, 0.05, g);
+    const bras = box(0.05, 0.05, 0.22, M.blanc, 0, 0.0, 0.18, g);
+    const corps = new THREE.Group(); corps.position.set(0, -0.04, 0.38); corps.rotation.x = 0.35; g.add(corps);
+    box(0.2, 0.18, 0.42, M.blanc, 0, 0, 0, corps); box(0.24, 0.02, 0.48, M.blanc, 0, 0.105, 0.03, corps);
+    box(0.18, 0.16, 0.01, M.sombre, 0, 0, 0.215, corps);
+    const lentille = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), new THREE.MeshStandardMaterial({ color:0x111111, roughness:0.05, metalness:0.6 }));
+    lentille.position.set(0, 0, 0.215); lentille.scale.z = 0.4; corps.add(lentille);
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; led(corps, Math.cos(a) * 0.075, Math.sin(a) * 0.065, 0.222, 0x8b0000, 0.008); }
+    D.ledCam = led(corps, 0.07, -0.06, 0.222, 0x33ff66, 0.01);
+    const z = zoneCone(2.2, 5, 0xffffff); corps.add(z); D.zoneCam = z; zones.push(z);
+    D.camCorps = corps;
+  },
+  pc(g) {
+    box(1.6, 0.05, 0.7, M.bois, 0, -0.03, 0, g);
+    for (const [x, z] of [[-0.75, -0.3], [0.75, -0.3], [-0.75, 0.3], [0.75, 0.3]]) box(0.04, 0.75, 0.04, M.sombre, x, -0.4, z, g);
+    box(0.06, 0.25, 0.06, M.sombre, 0, 0.12, -0.2, g);
+    box(0.92, 0.56, 0.04, M.sombre, 0, 0.5, -0.22, g);
+    const ecran = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.5), new THREE.MeshBasicMaterial({ color:0xffffff }));
+    ecran.position.set(0, 0.5, -0.197); g.add(ecran); D.ecranPC = ecran;
+    box(0.5, 0.02, 0.16, M.sombre, 0, 0.0, 0.1, g); box(0.2, 0.42, 0.42, M.sombre, 0.62, 0.2, -0.05, g);
+    box(0.5, 0.5, 0.5, M.sombre, 0, -0.5, 0.6, g);
+  },
+  lampe(g, o) {
+    const disque = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0xffc061, emissiveIntensity:0 }));
+    g.add(disque);
+    const l = new THREE.PointLight(0xffc98a, 0, 10, 1.6); l.position.y = -0.4; g.add(l);
+    D['lampe_' + o.id] = { disque, l, v:0 };
+  },
+  ventilateur(g) {
+    cyl(0.03, 0.03, 0.3, M.sombre, g).position.y = 0.17;
+    cyl(0.12, 0.1, 0.12, M.sombre, g);
+    const pales = new THREE.Group(); g.add(pales);
+    for (let i = 0; i < 4; i++) { const p = new THREE.Group(); p.rotation.y = i * Math.PI / 2; box(0.9, 0.02, 0.16, M.bois, 0.52, -0.04, 0, p); pales.add(p); }
+    D.pales = pales; D.vitesse = 0;
+  },
+  chauffage(g) {
+    const m = new THREE.MeshStandardMaterial({ color:0xe6e6e6, emissive:0xff2200, emissiveIntensity:0 });
+    box(1.2, 0.62, 0.06, m, 0, 0, 0.04, g);
+    for (let i = 0; i < 10; i++) box(0.04, 0.6, 0.05, m, -0.54 + i * 0.12, 0, 0.09, g);
+    const l = new THREE.PointLight(0xff4a1c, 0, 3.5, 2); l.position.z = 0.4; g.add(l);
+    D.chauffage = { m, l };
+  },
+  relais(g) {
+    box(0.32, 0.18, 0.02, M.pcbBleu, 0, 0, 0.01, g);
+    box(0.13, 0.11, 0.1, M.pcbBleu, -0.04, 0, 0.07, g);
+    box(0.07, 0.12, 0.06, M.vertBorn, 0.11, 0, 0.05, g);
+    D.ledRelais = led(g, -0.13, 0.06, 0.03, 0xff2020);
+  },
+  esp32(g) {
+    box(0.56, 0.4, 0.02, M.blanc, 0, 0, 0.01, g);
+    box(0.42, 0.18, 0.02, M.pcbNoir, 0, 0, 0.03, g);
+    box(0.15, 0.13, 0.025, M.metal, 0.07, 0, 0.05, g);
+    box(0.06, 0.13, 0.01, M.pcbNoir, 0.18, 0, 0.045, g);
+    box(0.05, 0.035, 0.03, M.metal, -0.2, 0, 0.05, g);
+    for (const y of [0.08, -0.08]) for (let i = 0; i < 12; i++) box(0.008, 0.008, 0.05, M.or, -0.16 + i * 0.026, y, 0.06, g, false);
+    D.ledEsp = led(g, -0.13, 0.04, 0.05, 0x2f8fff); D.ledPower = led(g, -0.13, -0.04, 0.05, 0xff3030);
+  },
+  oled(g) {
+    box(0.36, 0.26, 0.02, M.pcbNoir, 0, 0, 0.01, g);
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const ecran = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.17), new THREE.MeshBasicMaterial({ map:t }));
+    ecran.position.z = 0.022; g.add(ecran); D.oled = { c, t };
+    broches(g, 4, -0.045, 0.12, 0.02);
+  },
+  bouton(g) {
+    box(0.14, 0.14, 0.05, M.sombre, 0, 0, 0.025, g);
+    const cap = cyl(0.04, 0.045, 0.04, mat({ color:0xd62828 }), g); cap.rotation.x = Math.PI / 2; cap.position.z = 0.07;
+    D.ledArmee = led(g, 0, 0.1, 0.03, 0xff9f1c, 0.018);
+  },
+  sirene(g) {
+    box(0.3, 0.3, 0.08, M.blanc, 0, 0, 0.04, g);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color:0xaa1111, emissive:0xff0000, emissiveIntensity:0, transparent:true, opacity:0.9 }));
+    dome.rotation.x = Math.PI / 2; dome.position.z = 0.08; g.add(dome);
+    const l = new THREE.PointLight(0xff2020, 0, 14, 1.5); l.position.z = 0.6; g.add(l);
+    D.sirene = { dome, l };
+  },
+  solaire(g) {
+    for (const [x, z] of [[-3.4, 1.5], [3.4, 1.5]]) box(0.12, 2.7, 0.12, M.sombre, x, -1.55, z, g);
+    box(7, 0.12, 0.12, M.sombre, 0, -0.2, 1.5, g);
+    for (let i = 0; i < 4; i++) { const p = box(1.6, 0.05, 3.1, M.solaire, -2.55 + i * 1.7, 0, 0, g); p.rotation.x = -0.18; }
+  },
+  batterie(g) {
+    box(0.7, 1.4, 0.55, mat({ color:0x3b4148 }), 0, 0.7, -0.05, g);
+    box(0.62, 0.02, 0.45, M.sombre, 0, 0.75, 0.02, g);
+    for (let i = 0; i < 4; i++) { const c = cyl(0.045, 0.045, 0.42, M.vert18650, g); c.rotation.z = Math.PI / 2; c.position.set(0, 0.38 + i * 0.1, 0.12); }
+    box(0.18, 0.02, 0.12, M.pcbBleu, -0.17, 0.77, 0.12, g);
+    box(0.16, 0.02, 0.12, M.pcbViolet, 0.15, 0.77, 0.12, g);
+    const niveau = box(0.08, 1, 0.02, new THREE.MeshStandardMaterial({ color:0x2b8a3e, emissive:0x2b8a3e, emissiveIntensity:0.7 }), -0.28, 0.6, 0.24, g);
+    D.niveauBat = niveau;
+  },
+};
+const COURT = { esp32:'ESP32', radar_salon:'Radar LD2410', radar_chambre:'Radar LD2410', ldr:'LDR', dht22:'DHT22', mq2:'MQ-2', ils_porte:'Contact ILS', camera:'Caméra IA', pc_vision:'PC vision · OpenCV', lampe_salon:'Lampe', lampe_chambre:'Lampe', ventilateur:'Ventilateur', chauffage:'Chauffage', relais:'Relais', sirene:'Sirène', oled:'Écran OLED', bouton:'Bouton alarme', panneau_solaire:'Panneau solaire', batterie:'Batterie + INA219' };
+const TAGS = {};
+for (const o of PLAN.objets) {
+  const g = new THREE.Group(); g.position.set(...o.pos); g.rotation.y = (o.rot || 0) * Math.PI / 180; maison.add(g);
+  (MODELES[o.type] || (() => {}))(g, o);
+  g.traverse(m => { if (m.isMesh && !m.userData.zone) { m.userData.objet = o; cliquables.push(m); } });
+  const hauteurTag = { lampe:-0.15, mq2:-0.2, solaire:0.5, batterie:1.6, pc:0.9, ventilateur:-0.15 }[o.type] ?? 0.32;
+  const t = etiquette(COURT[o.id] || o.nom, o.pos[0], o.pos[1] + hauteurTag, o.pos[2]);
+  t.element.style.setProperty('--c', '#' + COUL[o.categorie].toString(16).padStart(6, '0'));
+  t.element.innerHTML = `${COURT[o.id] || o.nom}<b></b>`; TAGS[o.id] = t.element.querySelector('b');
+}
+
+// ---------- Câblage animé vers l'ESP32 ----------
+const reseau = new THREE.Group(); maison.add(reseau);
+const ESP = OBJ.esp32.pos, PLAFOND = 2.7;
+const cables = {};
+function cable(id, points, couleur, sens = 1) {
+  const chemin = new THREE.CurvePath();
+  for (let i = 0; i < points.length - 1; i++) chemin.add(new THREE.LineCurve3(new THREE.Vector3(...points[i]), new THREE.Vector3(...points[i + 1])));
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(chemin, Math.max(20, points.length * 24), 0.022, 6, false), new THREE.MeshBasicMaterial({ color:couleur, transparent:true, opacity:0.85 }));
+  reseau.add(tube);
+  cables[id] = { chemin, couleur, sens, impulsions:[] };
+}
+for (const o of PLAN.objets) {
+  if (['esp32', 'camera', 'pc_vision', 'panneau_solaire'].includes(o.id)) continue;
+  const [x, y, z] = o.pos, c = COUL[o.categorie];
+  const sens = ['capteur', 'energie'].includes(o.categorie) ? 1 : -1;  // mesure → ESP32 ; ESP32 → actionneur
+  cable(o.id, [[x, y, z], [x, PLAFOND, z], [ESP[0] + 0.06, PLAFOND, z], [ESP[0] + 0.06, PLAFOND, ESP[2]], [ESP[0] + 0.06, ESP[1], ESP[2]]], c, sens);
+}
+const B = OBJ.batterie.pos, S = OBJ.panneau_solaire.pos, C = OBJ.camera.pos, P = OBJ.pc_vision.pos;
+cable('panneau_solaire', [[S[0], S[1] - 0.2, S[2] + 1.5], [S[0], 0.05, S[2] + 1.5], [B[0], 0.05, S[2] + 1.5], [B[0], 0.05, B[2]], [B[0], 0.6, B[2]]], COUL.energie, 1);
+cable('camera', [[C[0], C[1], C[2] - 0.1], [C[0], PLAFOND, C[2] - 0.2], [C[0], PLAFOND, P[2]], [P[0], PLAFOND, P[2]], [P[0], P[1] + 0.2, P[2] - 0.3]], COUL.vision, 1);
+{ // liaison sans fil PC vision ↔ ESP32 (WiFi / MQTT)
+  const a = new THREE.Vector3(P[0], P[1] + 0.8, P[2] - 0.2), b = new THREE.Vector3(ESP[0] + 0.1, ESP[1] + 0.2, ESP[2]);
+  const milieu = a.clone().lerp(b, 0.5); milieu.y = 4.2;
+  const courbe = new THREE.QuadraticBezierCurve3(a, milieu, b);
+  const ligne = new THREE.Line(new THREE.BufferGeometry().setFromPoints(courbe.getPoints(60)), new THREE.LineDashedMaterial({ color:COUL.vision, dashSize:0.15, gapSize:0.1 }));
+  ligne.computeLineDistances(); reseau.add(ligne);
+  cables.wifi = { chemin:courbe, couleur:COUL.vision, sens:1, impulsions:[] };
+  etiquette('WiFi · MQTT', milieu.x, milieu.y - 0.4, milieu.z, 'tag').element.style.setProperty('--c', '#7048e8');
+}
+const geoImpulsion = new THREE.SphereGeometry(0.06, 10, 8);
+function impulsion(id, n = 1) {
+  const c = cables[id]; if (!c) return;
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(geoImpulsion, new THREE.MeshBasicMaterial({ color:0xffffff }));
+    m.material.color.set(c.couleur).lerp(new THREE.Color(0xffffff), 0.5); reseau.add(m);
+    c.impulsions.push({ m, u:-i * 0.12 });
+  }
+}
+function majImpulsions(dt) {
+  for (const c of Object.values(cables)) {
+    for (const p of c.impulsions) {
+      p.u += dt * 0.7;
+      const u = Math.min(1, Math.max(0, p.u));
+      p.m.visible = p.u >= 0;
+      p.m.position.copy(c.chemin.getPointAt(c.sens > 0 ? u : 1 - u));
+    }
+    for (const p of c.impulsions.filter(p => p.u >= 1)) reseau.remove(p.m);
+    c.impulsions = c.impulsions.filter(p => p.u < 1);
+  }
+}
+
+// =====================================================================
+//  PERSONNES
+// =====================================================================
+const NOEUDS = { D:[8.25, 12.6], P:[8.25, 9.0], E:[8.25, 6.9], S:[6.2, 5.9], L:[4.7, 6.4], C:[4.2, 4.2], B:[2.4, 2.1], J:[3.0, 13.2], V:[3.4, 8.6] };
+const ARETES = [['D', 'P'], ['P', 'E'], ['E', 'S'], ['S', 'L'], ['L', 'C'], ['C', 'B'], ['J', 'V'], ['V', 'L'], ['D', 'J']];
+function chemin(de, vers, interdit) {
+  const prec = { [de]:null }, file = [de];
+  while (file.length) {
+    const n = file.shift(); if (n === vers) break;
+    for (const [a, b] of ARETES) {
+      if (interdit.includes(a + b) || interdit.includes(b + a)) continue;
+      const m = a === n ? b : b === n ? a : null;
+      if (m && !(m in prec)) { prec[m] = n; file.push(m); }
+    }
+  }
+  const out = []; for (let n = vers; n; n = prec[n]) out.unshift(n); return out;
+}
+function personnage(couleur, nom, connu) {
+  const g = new THREE.Group();
+  const corps = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.85, 4, 12), mat({ color:couleur })); corps.position.y = 0.75; corps.castShadow = true; g.add(corps);
+  const tete = new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 14), mat({ color:0xe0b48f })); tete.position.y = 1.45; tete.castShadow = true; g.add(tete);
+  if (!connu) { const capuche = new THREE.Mesh(new THREE.SphereGeometry(0.185, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), mat({ color:0x1a1a1a })); capuche.position.y = 1.47; g.add(capuche); }
+  g.visible = false; scene.add(g);
+  const el = document.createElement('div'); el.className = 'tag person'; el.textContent = nom;
+  const t = new CSS2DObject(el); t.position.y = 1.95; g.add(t);
+  return { g, nom, connu, chemin:[], noeud:null, vu:0, signale:false, absent:0 };
+}
+const marie = personnage(0x2a9d8f, 'Marie', true), intrus = personnage(0x2b2b2b, 'Inconnu', false);
+const LIEU_M = { absent:null, dehors:'D', sejour:'L', chambre:'B' }, LIEU_I = { absent:null, porte:'E', fenetre:'L' };
+function deplacer(p, cible, depart, interdit) {
+  if (cible === null) { p.g.visible = false; p.noeud = null; p.chemin = []; return; }
+  if (!p.g.visible) { p.noeud = depart; const [x, z] = NOEUDS[depart]; p.g.position.set(x, 0, z); p.g.visible = true; }
+  p.chemin = chemin(p.noeud, cible, interdit); if (p.chemin[0] === p.noeud) p.chemin.shift();
+}
+function bougerMarie(l) { deplacer(marie, LIEU_M[l], 'D', ['VL', 'JV']); selSeg('segMarie', 'p', l); }
+function bougerIntrus(l) { deplacer(intrus, LIEU_I[l], l === 'fenetre' ? 'J' : 'D', l === 'fenetre' ? ['DJ', 'PE'] : ['JV', 'VL']); selSeg('segIntrus', 'p', l); }
+function marcher(p, dt) {
+  if (!p.g.visible || !p.chemin.length) return;
+  const [tx, tz] = NOEUDS[p.chemin[0]], dx = tx - p.g.position.x, dz = tz - p.g.position.z, d = Math.hypot(dx, dz), pas = 1.6 * dt;
+  if (d <= pas) { p.g.position.set(tx, 0, tz); p.noeud = p.chemin.shift(); }
+  else { p.g.position.x += dx / d * pas; p.g.position.z += dz / d * pas; p.g.rotation.y = Math.atan2(dx, dz); }
+}
+const dans = (p, x0, z0, x1, z1) => p.g.visible && p.g.position.x > x0 && p.g.position.x < x1 && p.g.position.z > z0 && p.g.position.z < z1;
+
+// =====================================================================
+//  MONDE PHYSIQUE SIMULÉ → capteurs virtuels
+// =====================================================================
+const monde = { heure:14, text:31, t:27, batterie:80, gaz:0, fuite:false, lum:70, solaire:0, porte:false };
+function lumiereJour(h) { return Math.max(0, Math.sin(Math.PI * (h - 6.5) / 12.5)); }  // lever 6h30, coucher 19h
+function majMonde(dt, etat) {
+  const jour = lumiereJour(monde.heure);
+  monde.lum = Math.round(100 * Math.min(1, jour * 1.25));
+  monde.solaire = 6 * jour;
+  const ventilo = etat?.clim?.ventilo, chauffe = etat?.clim?.chauffage;
+  monde.t += ((monde.text - monde.t) * 0.02 + (ventilo ? -0.25 : 0) + (chauffe ? 0.25 : 0)) * dt;
+  const conso = etat?.energie?.conso_w ?? 0.8;
+  monde.batterie = Math.min(100, Math.max(0, monde.batterie + (monde.solaire - conso) / 10 * 100 / 3600 * 30 * dt));
+  monde.gaz = monde.fuite ? Math.min(85, monde.gaz + 12 * dt) : Math.max(0, monde.gaz - 15 * dt);
+  monde.porte = [marie, intrus].some(p => dans(p, 7.4, 8.1, 9.1, 10.3));
+}
+function capteursVirtuels() {
+  return {
+    pres_salon: +[marie, intrus].some(p => dans(p, 0, 3.5, 7, 9)), pres_chambre: +[marie, intrus].some(p => dans(p, 0, 0, 5, 3.5)),
+    porte: +monde.porte, t: +monde.t.toFixed(2), h: Math.round(55 - (monde.t - 24) * 0.8), lum: monde.lum,
+    gaz: Math.round(monde.gaz), solaire: +monde.solaire.toFixed(2), batterie: Math.round(monde.batterie),
+  };
+}
+
+// =====================================================================
+//  CAMÉRA IA : vue de la caméra + détection
+// =====================================================================
+const camIA = new THREE.PerspectiveCamera(62, 4 / 3, 0.1, 40);
+const cibleRendu = new THREE.WebGLRenderTarget(320, 240);
+D.ecranPC.material.map = cibleRendu.texture; D.ecranPC.material.needsUpdate = true;
+let sourceCam = 'scene', flashVision = 0, couleurVision = new THREE.Color(0xffffff);
+function placerCamIA() {
+  D.camCorps.updateWorldMatrix(true, false);
+  const p = new THREE.Vector3(0, 0, 0.3).applyMatrix4(D.camCorps.matrixWorld);
+  const v = new THREE.Vector3(0, 0, 5).applyMatrix4(D.camCorps.matrixWorld);
+  camIA.position.copy(p); camIA.lookAt(v);
+}
+const SCORE = { true:0.84, false:0.19 };
+function detections(dt) {
+  const boites = [];
+  for (const p of [marie, intrus]) {
+    let visible = false;
+    if (p.g.visible) {
+      const tete = p.g.position.clone(); tete.y = 1.45;
+      const n = tete.clone().project(camIA), haut = tete.clone().setY(1.67).project(camIA);
+      const dist = tete.distanceTo(camIA.position);
+      if (n.z < 1 && Math.abs(n.x) < 0.95 && Math.abs(n.y) < 0.95 && dist < 7.5 && p.g.position.z > 8.6) {
+        visible = true;
+        const score = SCORE[p.connu] + Math.sin(performance.now() / 300 + p.connu) * 0.02;
+        boites.push({ n, h:Math.abs(haut.y - n.y), p, score });
+      }
+    }
+    if (visible) { p.vu += dt; p.absent = 0; if (p.vu > 1 && !p.signale) { p.signale = true; envoyerVision(p.connu, SCORE[p.connu]); } }
+    else if ((p.absent += dt) > 1) { p.vu = 0; p.signale = false; }
+  }
+  return boites;
+}
+function dessinerBoites(boites) {
+  const W = $('pip').clientWidth, Hh = $('pip').clientHeight;
+  $('pipDet').innerHTML = boites.map(({ n, h, p, score }) => {
+    const cx = (n.x + 1) / 2 * W, cy = (1 - n.y) / 2 * Hh, demi = Math.max(10, h * Hh / 2 * 1.1);
+    const c = p.connu ? '#2b8a3e' : '#e03131';
+    const txt = p.connu ? `Marie · résidente ${score.toFixed(2)}` : `INCONNU ${score.toFixed(2)}`;
+    return `<div class="det" style="left:${cx - demi * 0.85}px;top:${cy - demi}px;width:${demi * 1.7}px;height:${demi * 2.1}px;border-color:${c}"><span style="background:${c}">${txt}</span></div>`;
+  }).join('');
+}
+function envoyerVision(connu, score) {
+  if (sourceCam !== 'scene' || mode === 'miroir') return;
+  bus.publier('vision', { resultat:connu ? 'connu' : 'inconnu', score:+score.toFixed(3), source:'jumeau3d' });
+}
+
+// =====================================================================
+//  BUS (MQTT ou local) — même protocole que l'ESP32
+// =====================================================================
+const bus = new MaisonBus();
+let mode = null, etat = null, dernierEtat = 0, emule = null, espDispo = null, visionPython = 0, dernierEnvoi = 0, dernierSource = 0;
+const params = new URLSearchParams(location.search);
+$('maisonId').value = params.get('maison') || (() => { try { return localStorage.getItem('maisonId'); } catch (e) { return null; } })() || 'maison-ia-elnovic';
+function pastille(id, cls, txt) { const p = $(id); p.className = 'pill ' + cls; p.querySelector('span').textContent = txt; }
+bus.surStatut = (s, txt) => pastille('pBus', s === 'ok' ? 'ok' : s === 'attente' ? 'warn' : 'err', txt);
+bus.on((sub, txt) => {
+  if (sub === 'etat') {
+    try { const e = JSON.parse(txt); comparerEtat(etat, e); etat = e; dernierEtat = performance.now(); } catch (e) {}
+  } else if (sub === 'evenement') { try { const e = JSON.parse(txt); evenement(e.type, e.detail); } catch (e) {} }
+  else if (sub === 'disponible') { espDispo = txt === 'online'; journal('ESP32 ' + (espDispo ? 'en ligne' : 'hors ligne')); }
+  else if (sub === 'vision/etat') { visionPython = txt === 'online' ? performance.now() : 0; }
+  else if (sub === 'vision') {
+    try {
+      const v = JSON.parse(txt), connu = v.resultat === 'connu';
+      flashVision = 3; couleurVision.set(connu ? 0x2b8a3e : 0xe03131); impulsion('camera'); impulsion('wifi', 2);
+      journal(`Vision (${v.source === 'webcam' ? 'webcam' : 'scène 3D'}) : visage ${connu ? 'CONNU' : 'INCONNU'} · score ${(+v.score || 0).toFixed(2)}`);
+      if (v.source === 'webcam') { visionPython = performance.now(); if (mode === 'jumeau') { if (connu && !marie.g.visible) bougerMarie('dehors'); if (!connu && !intrus.g.visible) bougerIntrus('porte'); } }
+    } catch (e) {}
+  }
+});
+// Impulsions sur les fils quand une valeur change
+function comparerEtat(a, b) {
+  if (!a) return;
+  const ch = (f, id) => { if (JSON.stringify(f(a)) !== JSON.stringify(f(b))) impulsion(id, 2); };
+  ch(e => e.pres.salon, 'radar_salon'); ch(e => e.pres.chambre, 'radar_chambre'); ch(e => e.porte, 'ils_porte');
+  ch(e => e.lumiere.salon, 'lampe_salon'); ch(e => e.lumiere.chambre, 'lampe_chambre');
+  ch(e => e.clim.ventilo, 'ventilateur'); ch(e => e.clim.ventilo, 'relais'); ch(e => e.clim.chauffage, 'chauffage');
+  ch(e => e.alarme, 'sirene'); ch(e => e.alarme, 'oled'); ch(e => Math.round(e.gaz / 10), 'mq2');
+}
+
+function changerMode(m) {
+  if (m === mode) return;
+  mode = m; selSeg('segMode', 'mode', m);
+  try { localStorage.setItem('maisonId', $('maisonId').value.trim()); } catch (e) {}
+  etat = null; espDispo = null; emule = null;
+  const id = $('maisonId').value.trim() || 'maison-ia-elnovic';
+  bus.connecter(m === 'local' ? 'local' : 'mqtt', id);
+  if (m === 'local') emule = new FirmwareEmule(bus);
+  $('monde').classList.toggle('disabled', m === 'miroir');
+  if (m === 'miroir') { bougerMarie('absent'); bougerIntrus('absent'); }
+  $('modeNote').className = 'note' + (m === 'local' ? ' warn' : '');
+  $('modeNote').textContent = {
+    jumeau:'Lancez le projet Wokwi (firmware/README.md). La 3D joue le monde physique : elle envoie les capteurs virtuels, et le firmware ESP32, identique à celui du FabLab, prend les décisions.',
+    miroir:'Branchez la maquette FabLab. La 3D affiche ce que mesurent les vrais capteurs et ce que fait l\'ESP32.',
+    local:'Mode secours : la logique du firmware est émulée en JavaScript. Pour la présentation officielle, utilisez le mode Simulation avec le vrai firmware.',
+  }[m];
+  $('lienSite').href = `../site-controle/index.html?maison=${encodeURIComponent(id)}&transport=${m === 'local' ? 'local' : 'mqtt'}`;
+  journal('Mode : ' + { jumeau:'simulation avec le firmware ESP32', miroir:'miroir de la maquette FabLab', local:'hors ligne (émulation)' }[m]);
+  dernierSource = 0;
+}
+function cmd(sub, v) { if (!bus.publier('cmd/' + sub, String(v))) journal('Non connecté : commande non envoyée'); }
+
+// =====================================================================
+//  RENDU DE L'ÉTAT
+// =====================================================================
+const lerp = (a, b, k) => a + (b - a) * k;
+const VIDE = { t:null, h:null, lum:60, gaz:0, pres:{ salon:0, chambre:0 }, lumiere:{ salon:0, chambre:0 }, mode_lum:{ salon:'auto', chambre:'auto' }, clim:{ mode:'auto', consigne:24, ventilo:0, chauffage:0 }, porte:0, alarme:'desarmee', cause:'', energie:{ solaire_w:0, batterie:0, eco:0, conso_w:0, wh:0, wh_ref:0 } };
+function appliquer(e, dt, t) {
+  const k = Math.min(1, dt * 4);
+  // Ciel et soleil : heure du monde simulé (ou luminosité mesurée en miroir)
+  const jour = mode === 'miroir' ? Math.min(1, e.lum / 80) : lumiereJour(monde.heure);
+  const angle = mode === 'miroir' ? 0.9 : Math.PI * (monde.heure - 6.5) / 12.5;
+  sun.position.set(6 - Math.cos(angle) * 22, 3 + Math.sin(Math.max(0.05, angle)) * 22, 14);
+  sun.intensity = 2.8 * jour; hemi.intensity = 0.1 + 0.9 * jour;
+  const ciel = SKY_NIGHT.clone().lerp(SKY_DUSK, Math.min(1, jour * 3)).lerp(SKY_DAY, Math.max(0, (jour - 0.25) / 0.75));
+  scene.background.copy(ciel); scene.fog.color.copy(ciel);
+  for (const [id, piece] of [['lampe_salon', 'salon'], ['lampe_chambre', 'chambre']]) {
+    const L = D['lampe_' + id]; L.v = lerp(L.v, e.lumiere[piece] ? 1 : 0, k);
+    L.l.intensity = L.v * 9; L.disque.material.emissiveIntensity = L.v * 2.5;
+  }
+  for (const [id, piece] of [['radar_salon', 'salon'], ['radar_chambre', 'chambre']]) {
+    const z = D['zone_' + id], on = e.pres[piece];
+    z.material.opacity = on ? 0.13 + 0.06 * Math.sin(t * 6) : 0.035; z.material.color.set(on ? 0x3aa0ff : 0x9fb3c8);
+    D['led_' + id].material.emissiveIntensity = on ? 3 : 0.1;
+  }
+  D.vitesse = lerp(D.vitesse, e.clim.ventilo ? 14 : 0, Math.min(1, dt * 1.5)); D.pales.rotation.y += D.vitesse * dt;
+  D.ledRelais.material.emissiveIntensity = e.clim.ventilo ? 3 : 0.1;
+  D.chauffage.m.emissiveIntensity = lerp(D.chauffage.m.emissiveIntensity, e.clim.chauffage ? 1.3 : 0, k); D.chauffage.l.intensity = D.chauffage.m.emissiveIntensity * 2.5;
+  D.porte.a = lerp(D.porte.a, e.porte ? -1.45 : 0, Math.min(1, dt * 5)); D.porte.pivot.rotation.y = D.porte.a;
+  const al = e.alarme;
+  const flash = al === 'declenchee' ? (Math.sin(t * 20) > 0 ? 1 : 0) : al === 'verification' ? (Math.sin(t * 5) > 0.6 ? 0.5 : 0) : 0;
+  D.sirene.dome.material.emissiveIntensity = flash * 3; D.sirene.l.intensity = flash * 30;
+  $('alarmGlow').style.opacity = al === 'declenchee' ? (flash ? 1 : 0.3) : 0;
+  D.ledArmee.material.emissiveIntensity = al === 'armee' ? 3 : al === 'verification' ? flash * 4 : 0.1;
+  D.ledGaz.material.emissiveIntensity = e.gaz >= 60 ? 4 : 0.1;
+  const b = (e.energie.batterie || 0) / 100;
+  D.niveauBat.scale.y = Math.max(0.02, b); D.niveauBat.position.y = 0.1 + b * 0.5;
+  D.niveauBat.material.color.set(e.energie.eco ? 0xe03131 : 0x2b8a3e); D.niveauBat.material.emissive.copy(D.niveauBat.material.color);
+  D.ledEsp.material.emissiveIntensity = (performance.now() - dernierEtat < 400) ? 4 : 0.2;
+  D.ledPower.material.emissiveIntensity = 2;
+  if (flashVision > 0) { flashVision -= dt; D.zoneCam.material.color.copy(couleurVision); D.zoneCam.material.opacity = 0.2; D.ledCam.material.emissiveIntensity = 4; }
+  else { D.zoneCam.material.color.set(0xffffff); D.zoneCam.material.opacity = 0.06; D.ledCam.material.emissiveIntensity = 1; }
+}
+let minuteurUI = 0, minuteurOled = 0;
+function valeurs(e) {
+  const f = (v, u, d = 1) => v == null ? '–' : (+v).toFixed(d) + u;
+  return {
+    radar_salon: e.pres.salon ? 'présence' : 'vide', radar_chambre: e.pres.chambre ? 'présence' : 'vide',
+    ldr: e.lum + ' %', dht22: f(e.t, ' °C'), mq2: e.gaz + ' %', ils_porte: e.porte ? 'ouverte' : 'fermée',
+    lampe_salon: e.lumiere.salon ? 'ON' : 'off', lampe_chambre: e.lumiere.chambre ? 'ON' : 'off',
+    ventilateur: e.clim.ventilo ? 'ON' : 'off', relais: e.clim.ventilo ? 'fermé' : 'ouvert', chauffage: e.clim.chauffage ? 'ON' : 'off',
+    sirene: e.alarme === 'declenchee' ? 'ALARME' : 'silence', bouton: NOM_ALARME[e.alarme], oled: '', esp32: e.source ? (e.source === 'emule' ? 'émulé' : 'en ligne') : '–',
+    panneau_solaire: f(e.energie.solaire_w, ' W'), batterie: e.energie.batterie + ' %', camera: flashVision > 0 ? 'analyse' : 'surveille', pc_vision: sourceCam === 'webcam' ? 'webcam' : 'scène 3D',
+  };
+}
+function majPanneau(e) {
+  const v = valeurs(e);
+  for (const [id, el] of Object.entries(TAGS)) el.textContent = v[id] ? ' ' + v[id] : '';
+  $('vT').textContent = e.t == null ? '–' : (+e.t).toFixed(1) + ' °C';
+  $('vH').textContent = e.h == null ? '–' : Math.round(e.h) + ' %';
+  $('vL').textContent = e.lum + ' %';
+  $('vS').textContent = (+e.energie.solaire_w).toFixed(1) + ' W';
+  $('vC').textContent = e.energie.conso_w != null ? (+e.energie.conso_w).toFixed(1) + ' W' : '–';
+  $('vB').textContent = e.energie.batterie + ' %' + (e.energie.eco ? ' éco' : '');
+  const p = [e.pres.salon && 'Séjour', e.pres.chambre && 'Chambre'].filter(Boolean);
+  $('vP').textContent = p.length ? p.join(' · ') : 'Personne';
+  $('vE').textContent = e.energie.wh_ref > 0.0005 ? Math.round(100 * (1 - e.energie.wh / e.energie.wh_ref)) + ' %' : '–';
+  $('tAlarme').className = 'tile span3 ' + e.alarme;
+  $('vA').textContent = NOM_ALARME[e.alarme] + (e.cause && (e.alarme === 'verification' || e.alarme === 'declenchee') ? ' · ' + (NOM_CAUSE[e.cause] || e.cause) : '');
+  $('vPorte').textContent = e.porte ? 'Porte OUVERTE' : 'Porte fermée';
+  // Pastilles
+  const frais = performance.now() - dernierEtat < 6000;
+  if (!etat) pastille('pEsp', mode === 'jumeau' ? 'warn' : 'err', mode === 'jumeau' ? 'ESP32 : lancez Wokwi' : 'ESP32 : aucune donnée');
+  else if (!frais || espDispo === false) pastille('pEsp', 'err', 'ESP32 hors ligne');
+  else pastille('pEsp', 'ok', { jumeau:'Firmware ESP32 · capteurs 3D', materiel:'Firmware ESP32 · capteurs réels', emule:'Firmware émulé (secours)' }[e.source] || 'ESP32 en ligne');
+  if (sourceCam === 'webcam') pastille('pVision', performance.now() - visionPython < 60000 && visionPython ? 'ok' : 'warn', visionPython ? 'Vision : Python OpenCV' : 'Vision : lancez surveillance.py');
+  else pastille('pVision', 'ok', 'Vision : caméra 3D');
+  if (infoObjet) afficherInfo(infoObjet);
+}
+function dessinerOled(e) {
+  const { c, t } = D.oled, g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#8fd3ff'; g.font = '15px "JetBrains Mono", monospace';
+  const l = [
+    `${bus.connecte ? 'WiFi MQTT' : '---- ----'} ${e.source === 'jumeau' ? '[3D]' : e.source === 'materiel' ? '[REEL]' : ''}`,
+    e.t == null ? 'T: --.- C' : `T:${(+e.t).toFixed(1)}C  H:${Math.round(e.h)}%`,
+    `Lum:${e.lum}%  Gaz:${e.gaz}%`,
+    `Clim:${e.clim.ventilo ? 'VENTILO' : e.clim.chauffage ? 'CHAUFFE' : 'repos'}`,
+    `Sol:${(+e.energie.solaire_w).toFixed(1)}W Bat:${e.energie.batterie}%`,
+    `Porte:${e.porte ? 'OUVERTE' : 'fermee'}`,
+    `Alarme:${{ desarmee:'Desarmee', armee:'ARMEE', verification:'VERIF...', declenchee:'!! ALARME !!' }[e.alarme]}`,
+  ];
+  l.forEach((s, i) => g.fillText(s, 6, 16 + i * 17)); t.needsUpdate = true;
+}
+
+// =====================================================================
+//  JOURNAL ET NOTIFICATIONS
+// =====================================================================
+function journal(txt) {
+  const li = document.createElement('li'); li.innerHTML = `<time>${new Date().toLocaleTimeString('fr-FR')}</time><span></span>`;
+  li.lastChild.textContent = txt; $('log').prepend(li); while ($('log').children.length > 80) $('log').lastChild.remove();
+}
+const ICONE_TG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#229ed9"/><path d="M5.5 11.8l11-4.3c.5-.2 1 .1.8.9l-1.9 8.8c-.1.6-.5.8-1 .5l-2.8-2-1.4 1.3c-.2.2-.3.3-.6.3l.2-2.9 5.2-4.7c.2-.2 0-.3-.3-.1l-6.4 4-2.8-.9c-.6-.2-.6-.6 0-.9z" fill="#fff"/></svg>';
+function notif(txt) {
+  const n = document.createElement('div'); n.className = 'notif'; n.innerHTML = ICONE_TG + '<div><b>Telegram · Ma maison</b><span></span></div>';
+  n.querySelector('span').textContent = txt; $('toast').prepend(n); setTimeout(() => n.remove(), 6500);
+}
+function evenement(type, detail = '') {
+  const txt = { armee:'Alarme armée (15 s pour sortir)', desarmee:'Alarme désarmée', verification:`Vérification : ${NOM_CAUSE[detail] || detail}, 15 s pour être reconnu`,
+    declenchee:`ALARME DÉCLENCHÉE : ${NOM_CAUSE[detail] || detail}`, bienvenue:'Résident reconnu : alarme désarmée automatiquement',
+    visiteur:'Visage inconnu à la porte (alarme désarmée)', energie:'Énergie : ' + detail }[type] || `${type} ${detail}`;
+  journal(txt); impulsion('sirene');
+  if (type === 'declenchee') notif(detail === 'gaz' ? 'Gaz détecté dans la cuisine ! Sirène activée.' : 'Intrusion détectée ! Photo jointe, sirène activée.');
+  if (type === 'visiteur') notif('Quelqu\'un d\'inconnu se présente à la porte.');
+  if (type === 'bienvenue') notif('Un résident est rentré. Alarme désarmée.');
+}
+
+// =====================================================================
+//  INTERACTION
+// =====================================================================
+function selSeg(id, attr, val) { for (const b of $(id).querySelectorAll('button')) b.classList.toggle('on', b.dataset[attr] === val); }
+$('segMode').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) changerMode(b.dataset.mode); });
+$('maisonId').addEventListener('change', () => { const m = mode; mode = null; changerMode(m); });
+$('segMarie').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) bougerMarie(b.dataset.p); });
+$('segIntrus').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) bougerIntrus(b.dataset.p); });
+$('bArmer').onclick = () => cmd('alarme', 'armer');
+$('bDesarmer').onclick = () => cmd('alarme', 'desarmer');
+$('bGaz').onclick = () => { monde.fuite = !monde.fuite; $('bGaz').textContent = monde.fuite ? 'Arrêter la fuite de gaz' : 'Simuler une fuite de gaz'; };
+const curseurs = [['sHeure', 'oHeure', 'heure', v => `${Math.floor(v)} h ${String(Math.round(v % 1 * 60)).padStart(2, '0')}`], ['sText', 'oText', 'text', v => v + ' °C'], ['sBat', 'oBat', 'batterie', v => Math.round(v) + ' %']];
+function lireCurseurs(ev) { for (const [s, o, cle, f] of curseurs) { if (!ev || ev.target.id === s) monde[cle] = +$(s).value; $(o).textContent = f(+$(s).value); } }
+function ecrireCurseur(id, v) { $(id).value = v; lireCurseurs({ target:$(id) }); }
+for (const [s] of curseurs) $(s).addEventListener('input', lireCurseurs);
+lireCurseurs();
+$('segCam').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return; sourceCam = b.dataset.c; selSeg('segCam', 'c', sourceCam);
+  const web = sourceCam === 'webcam';
+  $('pipImg').classList.toggle('hide', !web); $('pipDet').innerHTML = '';
+  if (web) $('pipImg').src = $('fluxUrl').value; else $('pipImg').removeAttribute('src');
+  $('pipSrc').textContent = web ? 'Webcam réelle · Python OpenCV' : 'Vision IA · scène 3D';
+  $('camNote').textContent = web ? 'Lancez « python surveillance.py » : la vraie reconnaissance faciale (même code que le jour J) envoie ses résultats à l\'ESP32, et la 3D fait apparaître la personne à la porte.' : 'Les avatars passent devant la caméra virtuelle ; le résultat « connu / inconnu » est envoyé à l\'ESP32 comme le ferait le programme Python.';
+});
+$('pipImg').onerror = () => { if (sourceCam === 'webcam') $('pipSrc').textContent = 'Flux Python introuvable'; };
+$('cReseau').onchange = e => { reseau.visible = e.target.checked; };
+$('cZones').onchange = e => { for (const z of zones) z.visible = e.target.checked; };
+$('cTags').onchange = e => { $('labels').classList.toggle('hide', !e.target.checked); };
+$('cToit').onchange = e => { toit.visible = e.target.checked; };
+const VUES = {
+  ensemble:[[-8, 16, 23], [6, 0, 5]], sejour:[[3.6, 6.8, 13], [3.4, 0.8, 6]], chambre:[[2.5, 7, -4.5], [2.5, 0.6, 1.8]],
+  entree:[[11.8, 4.2, 15], [8.4, 1.4, 8.6]], technique:[[13.5, 4, 10.5], [10.4, 1.2, 6.8]], bureau:[[12.5, 4.5, -3.5], [10, 0.9, 0.8]],
+};
+let vueCible = null;
+for (const b of document.querySelectorAll('[data-view]')) b.onclick = () => { vueCible = VUES[b.dataset.view]; };
+controls.addEventListener('start', () => { vueCible = null; });
+
+// Clic sur un composant → fiche
+const rayon = new THREE.Raycaster(), souris = new THREE.Vector2();
+let infoObjet = null, appui = null;
+renderer.domElement.addEventListener('pointerdown', e => { appui = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!appui || Math.hypot(e.clientX - appui[0], e.clientY - appui[1]) > 5) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  souris.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  rayon.setFromCamera(souris, camera);
+  const hit = rayon.intersectObjects(cliquables, false).find(h => h.object.visible);
+  if (hit) { infoObjet = hit.object.userData.objet; afficherInfo(infoObjet); }
+});
+$('info').querySelector('button').onclick = () => { infoObjet = null; $('info').classList.remove('on'); };
+const NOM_CAT = { capteur:'Capteur', actionneur:'Actionneur', controleur:'Contrôleur', energie:'Énergie', vision:'Vision par ordinateur' };
+function afficherInfo(o) {
+  const v = valeurs(etat || VIDE)[o.id];
+  const piece = PLAN.pieces.find(p => p.id === o.piece)?.nom || 'Extérieur';
+  $('infoBody').innerHTML = `<span class="cat" style="--c:#${COUL[o.categorie].toString(16).padStart(6, '0')}">${NOM_CAT[o.categorie]}</span><h3></h3><p class="note" id="iRole"></p>
+    <dl><dt>Branchement</dt><dd class="mono" id="iBroche"></dd><dt>Emplacement</dt><dd id="iPiece"></dd><dt>Valeur</dt><dd class="mono" id="iVal"></dd><dt>Topic MQTT</dt><dd class="mono" style="font-size:11px">…/${o.mesure ? 'etat → ' + o.mesure : o.id === 'pc_vision' || o.id === 'camera' ? 'vision' : 'etat'}</dd></dl>`;
+  $('infoBody').querySelector('h3').textContent = o.nom; $('iRole').textContent = o.role;
+  $('iBroche').textContent = o.broche; $('iPiece').textContent = piece; $('iVal').textContent = v || '–';
+  $('info').classList.add('on');
+}
+
+// =====================================================================
+//  SCÉNARIO DE PRÉSENTATION
+// =====================================================================
+let idScenario = 0;
+function dire(t) { $('caption').textContent = t; $('caption').classList.toggle('on', !!t); }
+async function scenario() {
+  const id = ++idScenario, att = s => new Promise((ok, ko) => setTimeout(() => id === idScenario ? ok() : ko(), s * 1000));
+  $('bScenario').textContent = '■ Arrêter le scénario';
+  try {
+    if (sourceCam !== 'scene') $('segCam').querySelector('[data-c=scene]').click();
+    bougerMarie('absent'); bougerIntrus('absent'); monde.fuite = false;
+    ecrireCurseur('sHeure', 19.5); ecrireCurseur('sText', 31); ecrireCurseur('sBat', 70); monde.t = 29;
+    cmd('lumiere/salon', 'auto'); cmd('lumiere/chambre', 'auto'); cmd('clim', 'auto'); cmd('consigne', '24'); cmd('alarme', 'desarmer');
+    await att(1); cmd('alarme', 'armer');
+    vueCible = VUES.ensemble; dire('19 h 30. La maison est vide et l\'alarme est armée (15 s de délai de sortie). Il fait 29 °C à l\'intérieur.'); await att(6);
+    vueCible = VUES.technique; dire('Le cerveau : un ESP32 relié en WiFi. C\'est le même programme qui tournera sur la maquette du FabLab.'); await att(6);
+    vueCible = VUES.entree; dire('À l\'entrée : la caméra IA, le contact de porte, la sirène et la photorésistance qui mesure la lumière du jour.'); await att(6);
+    bougerMarie('dehors'); dire('Marie rentre. La caméra la reconnaît par vision par ordinateur : l\'alarme se désarme toute seule.'); await att(7);
+    bougerMarie('sejour'); dire('Le radar mmWave détecte sa présence. Il fait nuit (LDR) : la lumière du séjour s\'allume.'); await att(4);
+    vueCible = VUES.sejour; await att(3);
+    dire('29 °C pour une consigne de 24 °C : l\'ESP32 ferme le relais et le ventilateur démarre.'); await att(9);
+    vueCible = VUES.chambre; bougerMarie('chambre'); dire('Elle passe dans la chambre : la lumière s\'y allume, et celle du séjour s\'éteint 10 s après son départ.'); await att(14);
+    vueCible = VUES.ensemble; bougerMarie('dehors'); dire('Marie ressort et arme l\'alarme depuis le site de contrôle sur son téléphone.'); await att(5);
+    cmd('alarme', 'armer'); bougerMarie('absent');
+    dire('Pendant le délai de sortie : l\'énergie vient du panneau solaire et de la batterie, et le bilan compare la consommation à celle d\'une maison sans IA.'); await att(16);
+    vueCible = VUES.entree; bougerIntrus('porte'); dire('Plus tard, un inconnu s\'approche. Visage non reconnu : sirène, gyrophare et notification Telegram avec photo.'); await att(9);
+    dire('Le propriétaire est prévenu immédiatement et coupe l\'alarme à distance.'); await att(4);
+    cmd('alarme', 'desarmer'); bougerIntrus('absent'); dire('Fin de la démonstration.'); await att(3);
+  } catch (e) { /* interrompu */ }
+  if (id === idScenario) { idScenario++; dire(''); $('bScenario').textContent = '▶ Lancer le scénario de présentation'; }
+}
+$('bScenario').onclick = () => { if ($('bScenario').textContent.startsWith('■')) { idScenario++; dire(''); $('bScenario').textContent = '▶ Lancer le scénario de présentation'; } else scenario(); };
+
+// =====================================================================
+//  BOUCLE PRINCIPALE
+// =====================================================================
+function redimensionner() {
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h); tagRenderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(redimensionner).observe(host); redimensionner();
+$('loading').remove();
+changerMode(params.get('mode') || 'local');
+journal('Jumeau numérique prêt : ' + PLAN.objets.length + ' composants IoT chargés depuis plan/plan.js');
+
+// Le monde simulé continue même si l'onglet est en arrière-plan (le site de contrôle peut être au premier plan)
+function etapeMonde(dt) {
+  if (mode !== 'miroir') {
+    marcher(marie, dt); marcher(intrus, dt); majMonde(dt, etat);
+    const now = performance.now();
+    if (now - dernierEnvoi > 200) { dernierEnvoi = now; bus.publier('capteurs/virtuels', capteursVirtuels()); if (image % 10 === 0) for (const id of ['radar_salon', 'dht22', 'ldr']) impulsion(id); }
+    if (emule) emule.boucle(dt);
+  }
+  if (mode !== 'local' && performance.now() - dernierSource > 5000 && bus.connecte) { dernierSource = performance.now(); bus.publier('cmd/source', mode === 'jumeau' ? 'jumeau' : 'materiel'); }
+}
+let tFond = performance.now();
+setInterval(() => { const n = performance.now(); if (document.hidden) etapeMonde(Math.min(1.5, (n - tFond) / 1000)); tFond = n; }, 250);
+const horloge = new THREE.Clock();
+let image = 0;
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(horloge.getDelta(), 0.1), t = horloge.elapsedTime; image++;
+  if (vueCible) {
+    const p = new THREE.Vector3(...vueCible[0]), c = new THREE.Vector3(...vueCible[1]);
+    camera.position.lerp(p, Math.min(1, dt * 2.5)); controls.target.lerp(c, Math.min(1, dt * 2.5));
+    if (camera.position.distanceTo(p) < 0.05) vueCible = null;
+  }
+  const e = etat || VIDE;
+  etapeMonde(dt);
+  appliquer(e, dt, t);
+  majImpulsions(dt);
+  placerCamIA();
+  if ((minuteurUI -= dt) <= 0) { minuteurUI = 0.25; majPanneau(e); }
+  if ((minuteurOled -= dt) <= 0) { minuteurOled = 0.5; dessinerOled(e); }
+  controls.update();
+  // Vue principale
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setViewport(0, 0, w, h); renderer.setScissorTest(false);
+  renderer.render(scene, camera);
+  // Vue de la caméra IA (incrustation + écran du PC)
+  D.zoneCam.visible = false; const reseauVisible = reseau.visible; reseau.visible = false;
+  const boites = detections(dt);
+  if (sourceCam === 'scene') {
+    const r = $('pip').getBoundingClientRect(), hr = host.getBoundingClientRect();
+    const x = r.left - hr.left, y = hr.bottom - r.bottom;
+    camIA.aspect = r.width / r.height; camIA.updateProjectionMatrix();
+    renderer.setScissorTest(true); renderer.setScissor(x, y, r.width, r.height); renderer.setViewport(x, y, r.width, r.height);
+    renderer.render(scene, camIA); renderer.setScissorTest(false); renderer.setViewport(0, 0, w, h);
+    dessinerBoites(boites);
+  }
+  if (image % 4 === 0) { camIA.aspect = 4 / 3; camIA.updateProjectionMatrix(); renderer.setRenderTarget(cibleRendu); renderer.render(scene, camIA); renderer.setRenderTarget(null); }
+  D.zoneCam.visible = $('cZones').checked; reseau.visible = reseauVisible;
+  tagRenderer.render(scene, camera);
+});
+}
+</script>
+</body>
+</html>
