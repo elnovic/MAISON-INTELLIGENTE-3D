@@ -2,342 +2,613 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#16191d">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
 <title>Ma maison — contrôle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* VOICE: application domotique sérieuse, lisible d'un coup d'œil sur un téléphone
-   IDEA: le tableau de bord d'un bâtiment : alarme en tête, pièces, climat, énergie, caméra, puis l'analyse
-   PICTURE: la carte d'alarme pleine largeur et les courbes temps réel
-   COLOUR and TYPE: blanc et graphite ; ambre lumière, bleu froid, rouge alarme, vert sécurité ; Figtree
-   LAYOUT: une colonne sur téléphone, grille de cartes au-delà de 760px */
-:root{color-scheme:light dark;--bg:light-dark(#f2f3f5,#101215);--card:light-dark(#ffffff,#1a1d21);--ink:light-dark(#1a1e23,#eceef1);--mute:light-dark(#5f6873,#9aa3ad);--line:light-dark(#e1e4e8,#2b3036);--chip:light-dark(#eef0f3,#23272c);
---amber:#f2a516;--blue:#2f8fd8;--red:#e03131;--green:#2b8a3e;--violet:#7048e8}
+/* VOICE: application domotique professionnelle, rassurante, lisible d'un coup d'œil
+   IDEA: le panneau d'un système d'alarme haut de gamme : l'état de sécurité d'abord, puis la maison pièce par pièce
+   PICTURE: la grande carte de sécurité avec son anneau d'état et ses actions
+   COLOUR and TYPE: graphite et blanc ; vert sécurité, ambre lumière, bleu froid, rouge alarme ; Figtree
+   LAYOUT: barre latérale sur ordinateur, barre d'onglets en bas sur téléphone */
+:root{color-scheme:light dark;
+--bg:light-dark(#f3f4f6,#0f1114);--card:light-dark(#ffffff,#181b20);--card2:light-dark(#f4f5f7,#20242a);--ink:light-dark(#14171b,#eef0f3);--mute:light-dark(#646d78,#99a2ad);--line:light-dark(#e4e7eb,#2a2f36);--on:light-dark(#ffffff,#343a43);
+--side:#111418;--sideInk:#c9ced6;--green:#1f9d55;--greenBg:light-dark(#e6f6ed,#12301f);--amber:#f2a516;--amberBg:light-dark(#fff4dc,#33270c);--blue:#2f8fd8;--red:#e03131;--redBg:light-dark(#fdecec,#3a1414);--violet:#7048e8;
+--r:16px;--safeB:env(safe-area-inset-bottom,0px)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Figtree,system-ui,sans-serif;overflow-x:clip}
-header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px max(4vw,14px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-header h1{margin:0;font-size:19px;font-weight:800}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Figtree,system-ui,sans-serif}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;min-height:100dvh}
+nav.side{background:var(--side);color:var(--sideInk);padding:18px 12px;position:sticky;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:17px;padding:4px 10px 18px}
+.brand svg{width:30px;height:30px}
+.navlink{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:inherit;text-decoration:none;font-weight:600;font-size:14.5px;min-height:44px}
+.navlink svg{width:20px;height:20px;flex:none}
+.navlink:hover{background:rgba(255,255,255,.06)}
+.navlink.on{background:rgba(255,255,255,.12);color:#fff}
+.dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--red);display:none}
+.dot.on{display:block}
+.side .foot{margin-top:auto;font-size:12px;color:#8b93a0;padding:8px 12px}
+main{padding:20px clamp(14px,3vw,32px) 40px;max-width:1240px;width:100%;margin:0 auto}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.top h1{margin:0;font-size:clamp(22px,3vw,28px);font-weight:800;line-height:1.1}
+.top .sub{color:var(--mute);font-size:13.5px}
 .pills{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
-.pill{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
-.pill i{width:8px;height:8px;border-radius:50%;background:#868e96}
-.pill.ok i{background:var(--green)}.pill.warn i{background:#f08c00}.pill.err i{background:var(--red)}
-main{padding:14px max(4vw,14px) 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px;max-width:1240px;margin:0 auto}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.card h2{margin:0 0 10px;font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.card h2 small{font-weight:600;color:var(--mute);font-size:12px}
-.wide{grid-column:1/-1}
-#alarme{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;transition:background .3s}
-#alarme.armee{background:#e7f5ec;border-color:#b5dfc3;color:#123d22}
-#alarme.verification{background:#fff4da;border-color:#ffd98a;color:#6b4300}
-#alarme.declenchee{background:var(--red);border-color:var(--red);color:#fff;animation:pulse .6s infinite alternate}
-@keyframes pulse{to{background:#a51d1d}}
-#alarme .etat{font-size:clamp(26px,5vw,40px);font-weight:800;line-height:1.05}
-#alarme p{margin:4px 0 0;opacity:.85}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
-.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:10px;padding:10px 16px;font:700 14px Figtree,sans-serif;cursor:pointer;min-height:44px}
-.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-#alarme.declenchee .btn{background:#fff;color:var(--red);border-color:#fff}
-.seg{display:flex;background:var(--chip);border-radius:10px;padding:3px;gap:3px}
-.seg button{flex:1;border:0;background:none;color:var(--ink);padding:8px 6px;border-radius:8px;font:600 13px Figtree,sans-serif;cursor:pointer;min-height:38px}
-.seg button.on{background:var(--ink);color:var(--bg)}
-button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.piece{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.piece:first-of-type{border-top:0;padding-top:0}
-.ampoule{width:44px;height:44px;border-radius:50%;background:var(--chip);display:grid;place-items:center;transition:background .3s,box-shadow .3s}
-.ampoule svg{width:22px;height:22px;fill:none;stroke:var(--mute);stroke-width:2}
-.ampoule.on{background:var(--amber);box-shadow:0 0 22px rgba(242,165,22,.6)}.ampoule.on svg{stroke:#3a2600}
-.piece b{display:block}.piece small{color:var(--mute)}
-.piece .seg{margin-top:6px}
-.big{font-size:clamp(34px,6vw,46px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
-.kv div{background:var(--chip);border-radius:10px;padding:8px 10px}
-.kv small{display:block;color:var(--mute);font-size:11.5px;font-weight:600}
-.kv strong{font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.cons{display:flex;align-items:center;gap:10px;margin:12px 0}
-.cons .btn{width:44px;padding:0;font-size:20px}
-.cons strong{font-size:20px;min-width:80px;text-align:center;font-variant-numeric:tabular-nums}
-.jauge{height:14px;border-radius:8px;background:var(--chip);overflow:hidden;margin-top:8px}
-.jauge i{display:block;height:100%;background:var(--green);border-radius:8px;transition:width .5s}
-.jauge.eco i{background:var(--red)}
-.cam{position:relative;aspect-ratio:4/3;background:#0c0e11;border-radius:10px;overflow:hidden;display:grid;place-items:center;color:#9aa3ad;text-align:center;padding:16px;font-size:13px}
-.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.cam .live{position:absolute;left:10px;top:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px}
-.vision{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}
-.vision strong.connu{color:var(--green)}.vision strong.inconnu{color:var(--red)}
-input[type=text]{width:100%;font:16px Figtree,sans-serif;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.fig{position:relative;height:190px}
+.pill{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:#8b93a0}
+.pill.ok i{background:var(--green)}.pill.warn i{background:var(--amber)}.pill.err i{background:var(--red)}
+section.page{display:none}section.page.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}.c3{grid-column:span 3}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.card h2{margin:0 0 12px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h2 small{font-weight:500;color:var(--mute);font-size:12.5px}
+.k{font-size:12.5px;color:var(--mute);font-weight:600}
+.v{font-size:clamp(26px,4vw,34px);font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--card2)}
+.stat .ico svg{width:20px;height:20px}
+.secu{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center;padding:22px}
+.anneau{width:108px;height:108px;border-radius:50%;display:grid;place-items:center;background:var(--card2);border:6px solid var(--line);transition:all .3s}
+.anneau svg{width:44px;height:44px}
+.secu.armee .anneau{border-color:var(--green);background:var(--greenBg);color:var(--green)}
+.secu.verification .anneau{border-color:var(--amber);background:var(--amberBg);color:var(--amber);animation:pulse 1s infinite}
+.secu.declenchee{background:var(--red);border-color:var(--red);color:#fff}
+.secu.declenchee .anneau{border-color:#fff;background:rgba(255,255,255,.15);color:#fff;animation:pulse .5s infinite}
+.secu.declenchee .k,.secu.declenchee .mute{color:rgba(255,255,255,.88)}
+@keyframes pulse{50%{transform:scale(1.06)}}
+.secu .etat{font-size:clamp(28px,4.5vw,40px);font-weight:800;line-height:1.05}
+.mute{color:var(--mute)}
+.actions{display:flex;flex-direction:column;gap:8px;min-width:200px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:11px 16px;font-weight:700;font-size:14.5px;cursor:pointer;min-height:46px;transition:transform .1s;text-decoration:none;color:inherit}
+.btn:active{transform:scale(.98)}
+.btn svg{width:19px;height:19px}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.secu.declenchee .btn{background:#fff;color:var(--red);border-color:#fff}
+.sos{position:relative;overflow:hidden;background:var(--redBg);color:var(--red);border-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+.sos .fill{position:absolute;inset:0;background:var(--red);transform-origin:left;transform:scaleX(0);opacity:.3}
+.sos span{position:relative}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.liste{display:flex;flex-direction:column}
+.liste .it{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.liste .it:first-child{border-top:0}
+.liste .it .ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--card2)}
+.liste .it .ico svg{width:18px;height:18px}
+.liste b{display:block;font-weight:600}.liste small{color:var(--mute)}
+.tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--card2);white-space:nowrap;text-decoration:none;color:inherit}
+.tag.ok{background:var(--greenBg);color:var(--green)}.tag.warn{background:var(--amberBg);color:#b7791f}.tag.err{background:var(--redBg);color:var(--red)}
+.piece{display:flex;flex-direction:column;gap:14px}
+.piece .head{display:flex;align-items:center;gap:14px}
+.lampe{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:var(--card2);transition:all .3s;flex:none}
+.lampe svg{width:28px;height:28px;color:var(--mute)}
+.lampe.on{background:var(--amber);box-shadow:0 0 26px rgba(242,165,22,.55)}.lampe.on svg{color:#3a2600}
+.seg{display:flex;background:var(--card2);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:none;padding:9px 6px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;min-height:42px}
+.seg button.on{background:var(--on);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.clim{display:grid;grid-template-columns:200px minmax(0,1fr);gap:22px;align-items:center}
+.jauge{position:relative;width:200px;height:200px}
+.jauge svg{width:100%;height:100%}
+.jauge .centre{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.jauge .centre .v{font-size:38px}
+.cons{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
+.cons .btn{width:48px;padding:0;font-size:22px}
+.cons strong{font-size:24px;min-width:90px;text-align:center;font-variant-numeric:tabular-nums}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.mini div{background:var(--card2);border-radius:12px;padding:10px 12px}
+.mini b{display:block;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barre{height:14px;border-radius:8px;background:var(--card2);overflow:hidden;margin-top:10px}
+.barre i{display:block;height:100%;width:0;background:var(--green);border-radius:8px;transition:width .6s}
+.barre.eco i{background:var(--red)}
+.cam{position:relative;aspect-ratio:16/10;background:#0b0d10;border-radius:12px;overflow:hidden;display:grid;place-items:center;color:#99a2ad;text-align:center;padding:20px;font-size:14px}
+.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.cam .live{position:absolute;left:12px;top:10px;background:var(--red);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;display:flex;gap:6px;align-items:center}
+.cam .live::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
+.fig{position:relative;height:210px}
 .fig canvas{position:absolute;inset:0;width:100%;height:100%}
-.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:6px}
-.leg span::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--c);margin-right:5px;vertical-align:3px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.stats div{background:var(--chip);border-radius:10px;padding:10px}
-.stats small{display:block;color:var(--mute);font-size:12px;font-weight:600}
-.stats strong{font-size:22px;font-variant-numeric:tabular-nums}
-#log{list-style:none;margin:0;padding:0;font-size:13px;max-height:260px;overflow-y:auto}
-#log li{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
-#log time{color:var(--mute);font-variant-numeric:tabular-nums}
-details{margin-top:4px}summary{cursor:pointer;color:var(--mute);font-size:13px;font-weight:600;min-height:32px;display:flex;align-items:center}
-.row{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:center;margin:8px 0}
-.row span{font-size:13px;font-weight:600}
-.note{font-size:12.5px;color:var(--mute);margin:8px 0 0}
-@media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}#alarme{grid-template-columns:1fr}.pills{margin-left:0}}
-@media(prefers-reduced-motion:reduce){#alarme.declenchee{animation:none}}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);margin-top:8px}
+.leg span::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:3px}
+.form{display:grid;gap:14px}
+.form label{display:grid;gap:6px;font-weight:600;font-size:14px}
+input[type=text],input[type=password]{width:100%;font:16px Figtree,sans-serif;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+.note{font-size:13px;color:var(--mute);margin:6px 0 0}
+dialog{border:0;border-radius:20px;padding:22px;background:var(--card);color:var(--ink);width:min(340px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.points{display:flex;justify-content:center;gap:12px;margin:14px 0 18px}
+.points i{width:14px;height:14px;border-radius:50%;border:2px solid var(--mute)}
+.points i.on{background:var(--ink);border-color:var(--ink)}
+.points.faux{animation:secoue .35s}
+@keyframes secoue{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pave{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pave button{height:58px;border-radius:14px;border:1px solid var(--line);background:var(--card2);font-size:22px;font-weight:700;cursor:pointer}
+#toast{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;z-index:20;width:min(330px,calc(100vw - 36px));pointer-events:none}
+.notif{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c,var(--blue));border-radius:12px;padding:11px 14px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-size:14px;animation:in .3s}
+@keyframes in{from{transform:translateY(-8px);opacity:0}}
+nav.tabs{display:none}
+@media(max-width:1000px){.c8,.c6{grid-column:span 12}.c4,.c3{grid-column:span 6}}
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  nav.side{display:none}
+  main{padding:14px 14px calc(92px + var(--safeB))}
+  nav.tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--side);padding:6px 4px calc(6px + var(--safeB));justify-content:space-around}
+  nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#9aa3ad;text-decoration:none;font-size:10.5px;font-weight:600;padding:6px 2px;border-radius:10px;min-width:46px;position:relative}
+  nav.tabs a svg{width:22px;height:22px}
+  nav.tabs a.on{color:#fff}
+  nav.tabs .dot{position:absolute;top:4px;right:8px;margin:0}
+  .secu{grid-template-columns:auto minmax(0,1fr);padding:18px;gap:16px}
+  .secu .actions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;min-width:0}
+  .secu .actions .btn{flex:1 1 140px}
+  .anneau{width:76px;height:76px;border-width:5px}.anneau svg{width:32px;height:32px}
+  .clim{grid-template-columns:1fr;justify-items:center}
+  .pills{margin-left:0}
+  .top .sub{display:none}
+  #toast{top:auto;bottom:calc(84px + var(--safeB));right:12px}
+}
+@media(max-width:340px){.c4,.c3{grid-column:span 12}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script src="../web/maison-bus.js"></script>
 </head>
 <body>
-<header>
-  <h1>Ma maison</h1>
-  <div class="pills">
-    <span class="pill" id="pBus"><i></i><span>Réseau</span></span>
-    <span class="pill" id="pEsp"><i></i><span>ESP32</span></span>
-    <span class="pill" id="pVision"><i></i><span>Caméra IA</span></span>
-  </div>
-</header>
-<main>
-  <section class="card wide" id="alarme">
-    <div><small>Sécurité</small><div class="etat" id="aEtat">–</div><p id="aDetail">En attente des données de la maison…</p></div>
-    <div class="btns"><button class="btn primary" id="bArmer">Armer</button><button class="btn" id="bDesarmer">Désarmer</button></div>
-  </section>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+    <symbol id="i-shieldok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></symbol>
+    <symbol id="i-lamp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-thermo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/></symbol>
+    <symbol id="i-door" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V3h12v18"/><path d="M14 12h.01"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-batt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M6 11v2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+    <symbol id="i-gas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16c2-2 4 2 6 0s4 2 6 0 3 1 4 0M4 11c2-2 4 2 6 0s4 2 6 0 3 1 4 0"/></symbol>
+  </defs>
+</svg>
 
-  <section class="card">
-    <h2>Éclairage <small id="lumExt">–</small></h2>
-    <div class="piece">
-      <div class="ampoule" id="ampSalon"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></div>
-      <div><b>Séjour</b><small id="presSalon">–</small>
-        <div class="seg" data-cmd="lumiere/salon"><button data-v="auto">Auto</button><button data-v="on">Allumée</button><button data-v="off">Éteinte</button></div></div>
+<div class="app">
+  <nav class="side" aria-label="Navigation">
+    <div class="brand"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#1f9d55"/><path d="M8 16l8-7 8 7v8H8z" fill="#fff"/><rect x="14" y="18" width="4" height="6" fill="#1f9d55"/></svg>Ma maison</div>
+    <a class="navlink" href="#accueil"><svg><use href="#i-home"/></svg>Accueil</a>
+    <a class="navlink" href="#securite"><svg><use href="#i-shield"/></svg>Sécurité<i class="dot"></i></a>
+    <a class="navlink" href="#pieces"><svg><use href="#i-lamp"/></svg>Éclairage</a>
+    <a class="navlink" href="#climat"><svg><use href="#i-thermo"/></svg>Climat</a>
+    <a class="navlink" href="#energie"><svg><use href="#i-bolt"/></svg>Énergie</a>
+    <a class="navlink" href="#camera"><svg><use href="#i-cam"/></svg>Caméra IA</a>
+    <a class="navlink" href="#analyses"><svg><use href="#i-chart"/></svg>Analyses</a>
+    <a class="navlink" href="#reglages"><svg><use href="#i-gear"/></svg>Réglages</a>
+    <div class="foot">Maison intelligente IoT</div>
+  </nav>
+
+  <main>
+    <div class="top">
+      <div><h1 id="titre">Accueil</h1><div class="sub" id="sousTitre">Vue d'ensemble</div></div>
+      <div class="pills">
+        <span class="pill" id="pBus"><i></i><span>Réseau</span></span>
+        <span class="pill" id="pEsp"><i></i><span>Maison</span></span>
+        <span class="pill" id="pVision"><i></i><span>Caméra</span></span>
+      </div>
     </div>
-    <div class="piece">
-      <div class="ampoule" id="ampChambre"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></div>
-      <div><b>Chambre</b><small id="presChambre">–</small>
-        <div class="seg" data-cmd="lumiere/chambre"><button data-v="auto">Auto</button><button data-v="on">Allumée</button><button data-v="off">Éteinte</button></div></div>
-    </div>
-  </section>
 
-  <section class="card">
-    <h2>Température du séjour <small id="climEtat">–</small></h2>
-    <div class="big" id="temp">–</div>
-    <div class="cons"><button class="btn" id="cMoins" aria-label="Baisser la consigne">−</button><strong id="consigne">–</strong><button class="btn" id="cPlus" aria-label="Monter la consigne">+</button><small style="color:var(--mute)">consigne</small></div>
-    <div class="seg" data-cmd="clim"><button data-v="auto">Automatique</button><button data-v="off">Arrêt</button></div>
-    <div class="kv"><div><small>Humidité</small><strong id="hum">–</strong></div><div><small>Ventilateur</small><strong id="vent">–</strong></div><div><small>Chauffage</small><strong id="chauf">–</strong></div></div>
-  </section>
+    <section class="page" id="p-accueil">
+      <div class="grid">
+        <div class="card c12 secu" data-secu>
+          <div class="anneau"><svg><use href="#i-shield"/></svg></div>
+          <div><div class="k">Sécurité</div><div class="etat" data-f="alarmeTxt">–</div><div class="mute" data-f="alarmeDetail">En attente des données de la maison…</div></div>
+          <div class="actions">
+            <button class="btn green" data-act="armer"><svg><use href="#i-lock"/></svg>Armer</button>
+            <button class="btn" data-act="desarmer"><svg><use href="#i-unlock"/></svg>Désarmer</button>
+          </div>
+        </div>
+        <div class="card c3 stat"><div class="ico" style="color:var(--amber)"><svg><use href="#i-thermo"/></svg></div><div class="k">Température</div><div class="v" data-f="temp">–</div><div class="mute" data-f="climTxt">–</div></div>
+        <div class="card c3 stat"><div class="ico" style="color:var(--amber)"><svg><use href="#i-lamp"/></svg></div><div class="k">Lumières allumées</div><div class="v" data-f="nbLampes">–</div><div class="mute" data-f="presTxt">–</div></div>
+        <div class="card c3 stat"><div class="ico" style="color:var(--green)"><svg><use href="#i-batt"/></svg></div><div class="k">Batterie solaire</div><div class="v" data-f="bat">–</div><div class="mute" data-f="solTxt">–</div></div>
+        <div class="card c3 stat"><div class="ico" style="color:var(--green)"><svg><use href="#i-bolt"/></svg></div><div class="k">Économie d'énergie</div><div class="v" data-f="eco">–</div><div class="mute">face à une maison sans IA</div></div>
+        <div class="card c8"><h2>Caméra de l'entrée <a class="tag" href="#camera">Ouvrir</a></h2><div class="cam" data-cam><span class="camMsg">Caméra non connectée</span></div></div>
+        <div class="card c4"><h2>Derniers évènements</h2><div class="liste" data-log="5"></div></div>
+      </div>
+    </section>
 
-  <section class="card">
-    <h2>Énergie solaire <small id="ecoBadge"></small></h2>
-    <div class="big" id="economie">–</div>
-    <small style="color:var(--mute)">d'économie par rapport à une maison sans automatisme</small>
-    <div class="kv"><div><small>Production</small><strong id="sol">–</strong></div><div><small>Consommation</small><strong id="conso">–</strong></div><div><small>Consommé</small><strong id="wh">–</strong></div></div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px"><span>Batterie</span><strong id="bat">–</strong></div>
-    <div class="jauge" id="jauge"><i style="width:0"></i></div>
-  </section>
+    <section class="page" id="p-securite">
+      <div class="grid">
+        <div class="card c12 secu" data-secu>
+          <div class="anneau"><svg><use href="#i-shield"/></svg></div>
+          <div><div class="k">État de l'alarme</div><div class="etat" data-f="alarmeTxt">–</div><div class="mute" data-f="alarmeDetail">–</div></div>
+          <div class="actions">
+            <button class="btn green" data-act="armer"><svg><use href="#i-lock"/></svg>Armer la maison</button>
+            <button class="btn" data-act="desarmer"><svg><use href="#i-unlock"/></svg>Désarmer (code)</button>
+          </div>
+        </div>
+        <div class="card c6">
+          <h2>Urgence</h2>
+          <button class="btn sos" id="sos" style="width:100%;min-height:64px;font-size:17px"><i class="fill"></i><span>Maintenir 2 s : alarme SOS</span></button>
+          <p class="note">Déclenche immédiatement la sirène et prévient l'utilisateur, même si l'alarme est désarmée. Sur la maquette, un appui de 3 s sur le bouton de l'entrée fait la même chose.</p>
+          <button class="btn red" data-act="couper" style="width:100%;margin-top:12px"><svg><use href="#i-bell"/></svg>Couper la sirène</button>
+        </div>
+        <div class="card c6">
+          <h2>Capteurs de sécurité</h2>
+          <div class="liste">
+            <div class="it"><div class="ico"><svg><use href="#i-door"/></svg></div><div><b>Porte d'entrée</b><small>Contact magnétique ILS</small></div><span class="tag" data-f="porteTag">–</span></div>
+            <div class="it"><div class="ico"><svg><use href="#i-user"/></svg></div><div><b>Présence</b><small>Radars mmWave LD2410</small></div><span class="tag" data-f="presTag">–</span></div>
+            <div class="it"><div class="ico"><svg><use href="#i-gas"/></svg></div><div><b>Gaz et fumée</b><small>Capteur MQ-2</small></div><span class="tag" data-f="gazTag">–</span></div>
+            <div class="it"><div class="ico"><svg><use href="#i-cam"/></svg></div><div><b>Caméra IA</b><small data-f="visionTxt">Aucune détection</small></div><span class="tag" data-f="visionTag">–</span></div>
+          </div>
+        </div>
+        <div class="card c12"><h2>Historique de sécurité</h2><div class="liste" data-log="12" data-filtre="secu"></div></div>
+      </div>
+    </section>
 
-  <section class="card">
-    <h2>Caméra de l'entrée <small>vision par ordinateur</small></h2>
-    <div class="cam" id="cam"><span id="camMsg">Flux vidéo de Python non disponible. Lancez <b>vision/surveillance.py</b> sur le PC.</span><img id="camImg" alt="Flux de la caméra analysé par OpenCV" hidden><span class="live" hidden id="camLive">EN DIRECT</span></div>
-    <div class="vision"><span>Dernière reconnaissance</span><strong id="visRes">–</strong></div>
-    <details><summary>Adresse du flux vidéo</summary><input type="text" id="fluxUrl" value="http://localhost:8081/flux" spellcheck="false"></details>
-  </section>
+    <section class="page" id="p-pieces">
+      <div class="grid">
+        <div class="card c6 piece">
+          <div class="head"><div class="lampe" data-lampe="salon"><svg><use href="#i-lamp"/></svg></div><div><h2 style="margin:0">Séjour</h2><span class="mute" data-f="presSalon">–</span></div></div>
+          <div class="seg" data-cmd="lumiere/salon"><button data-v="auto">Automatique</button><button data-v="on">Allumée</button><button data-v="off">Éteinte</button></div>
+        </div>
+        <div class="card c6 piece">
+          <div class="head"><div class="lampe" data-lampe="chambre"><svg><use href="#i-lamp"/></svg></div><div><h2 style="margin:0">Chambre</h2><span class="mute" data-f="presChambre">–</span></div></div>
+          <div class="seg" data-cmd="lumiere/chambre"><button data-v="auto">Automatique</button><button data-v="on">Allumée</button><button data-v="off">Éteinte</button></div>
+        </div>
+        <div class="card c12"><h2>Comment ça marche ?</h2><p class="mute" style="margin:0">En mode automatique, la lumière s'allume seulement si le radar détecte quelqu'un <b>et</b> s'il fait sombre dehors (photorésistance : <b data-f="lum">–</b> de lumière). Elle s'éteint 10 s après le départ de la personne.</p></div>
+      </div>
+    </section>
 
-  <section class="card wide">
-    <h2>Analyse en temps réel <small id="duree">–</small></h2>
-    <div class="stats">
-      <div><small>Lampes allumées</small><strong id="sLampes">0 s</strong></div>
-      <div><small>Détections caméra</small><strong id="sVision">0</strong></div>
-      <div><small>Alarmes</small><strong id="sAlarmes">0</strong></div>
-      <div><small>Énergie évitée</small><strong id="sEvite">–</strong></div>
-    </div>
-  </section>
-  <section class="card">
-    <h2>Température <small>°C</small></h2>
-    <div class="fig"><canvas id="gTemp"></canvas></div>
-    <div class="leg"><span style="--c:#e8590c">Séjour</span><span style="--c:#868e96">Consigne</span><span style="--c:#2f8fd8">Ventilateur en marche</span></div>
-  </section>
-  <section class="card">
-    <h2>Énergie <small>W</small></h2>
-    <div class="fig"><canvas id="gEnergie"></canvas></div>
-    <div class="leg"><span style="--c:#f2a516">Production solaire</span><span style="--c:#c92a2a">Consommation</span></div>
-  </section>
-  <section class="card">
-    <h2>Lumière et présence <small>%</small></h2>
-    <div class="fig"><canvas id="gLum"></canvas></div>
-    <div class="leg"><span style="--c:#868e96">Lumière extérieure</span><span style="--c:#7048e8">Présence</span><span style="--c:#f2a516">Lampe séjour</span></div>
-  </section>
+    <section class="page" id="p-climat">
+      <div class="grid">
+        <div class="card c6">
+          <h2>Séjour <small data-f="climTxt">–</small></h2>
+          <div class="clim">
+            <div class="jauge"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="84" fill="none" stroke="var(--card2)" stroke-width="16" stroke-dasharray="396 528" transform="rotate(135 100 100)" stroke-linecap="round"/><circle id="arc" cx="100" cy="100" r="84" fill="none" stroke="var(--amber)" stroke-width="16" stroke-dasharray="0 528" transform="rotate(135 100 100)" stroke-linecap="round"/></svg><div class="centre"><div class="v" data-f="temp">–</div><div class="mute" data-f="hum">–</div></div></div>
+            <div style="width:100%">
+              <div class="k">Consigne</div>
+              <div class="cons"><button class="btn" data-act="moins" aria-label="Baisser la consigne">−</button><strong data-f="consigne">–</strong><button class="btn" data-act="plus" aria-label="Monter la consigne">+</button></div>
+              <div class="seg" data-cmd="clim"><button data-v="auto">Automatique</button><button data-v="off">Arrêt</button></div>
+            </div>
+          </div>
+          <div class="mini"><div><span class="k">Ventilateur</span><b data-f="vent">–</b></div><div><span class="k">Chauffage</span><b data-f="chauf">–</b></div><div><span class="k">Présence</span><b data-f="presSalonCourt">–</b></div></div>
+        </div>
+        <div class="card c6"><h2>Température <small>10 dernières minutes</small></h2><div class="fig"><canvas data-g="temp"></canvas></div><div class="leg"><span style="--c:#e8590c">Séjour</span><span style="--c:#8b93a0">Consigne</span><span style="--c:#2f8fd8">Ventilateur en marche</span></div></div>
+      </div>
+    </section>
 
-  <section class="card">
-    <h2>Évènements</h2>
-    <ul id="log"></ul>
-  </section>
+    <section class="page" id="p-energie">
+      <div class="grid">
+        <div class="card c4 stat"><div class="ico" style="color:var(--amber)"><svg><use href="#i-sun"/></svg></div><div class="k">Production solaire</div><div class="v" data-f="sol">–</div></div>
+        <div class="card c4 stat"><div class="ico" style="color:var(--red)"><svg><use href="#i-bolt"/></svg></div><div class="k">Consommation</div><div class="v" data-f="conso">–</div></div>
+        <div class="card c4 stat"><div class="ico" style="color:var(--green)"><svg><use href="#i-chart"/></svg></div><div class="k">Économie vs maison sans IA</div><div class="v" data-f="eco">–</div></div>
+        <div class="card c6"><h2>Batterie <small data-f="ecoMode"></small></h2><div class="v" data-f="bat">–</div><div class="barre" data-barre><i></i></div><p class="note">Sous 20 %, la maison passe en mode éco : la climatisation est coupée, l'éclairage et la sécurité restent actifs.</p></div>
+        <div class="card c6"><h2>Bilan <small>depuis le démarrage</small></h2><div class="mini" style="margin:0"><div><span class="k">Consommé</span><b data-f="wh">–</b></div><div><span class="k">Sans IA</span><b data-f="whRef">–</b></div><div><span class="k">Évité</span><b data-f="evite">–</b></div></div></div>
+        <div class="card c12"><h2>Production et consommation <small>W</small></h2><div class="fig"><canvas data-g="energie"></canvas></div><div class="leg"><span style="--c:#f2a516">Production solaire</span><span style="--c:#e03131">Consommation</span></div></div>
+      </div>
+    </section>
 
-  <section class="card">
-    <h2>Réglages</h2>
-    <div class="row"><span>ID maison</span><input type="text" id="maisonId" spellcheck="false"></div>
-    <div class="row"><span>Connexion</span><div class="seg" id="segTransport"><button data-t="mqtt">Internet (MQTT)</button><button data-t="local">Hors ligne</button></div></div>
-    <p class="note">« Hors ligne » relie cette page au jumeau 3D ouvert dans un autre onglet du même navigateur, sans Internet.</p>
-  </section>
-</main>
+    <section class="page" id="p-camera">
+      <div class="grid">
+        <div class="card c8"><h2>Caméra de l'entrée <small>OpenCV · YuNet + SFace</small></h2><div class="cam" data-cam><span class="camMsg">Flux vidéo indisponible. Lancez <b>vision/surveillance.py</b> sur le PC de la caméra, puis vérifiez l'adresse du flux dans Réglages.</span></div></div>
+        <div class="card c4"><h2>Reconnaissances</h2><div class="liste" id="visions"><p class="mute" style="margin:0">Aucune détection pour l'instant.</p></div></div>
+        <div class="card c12"><h2>Protection des données</h2><p class="mute" style="margin:0">Les visages des résidents ne sont jamais stockés en photo : seules des empreintes numériques restent sur le PC. Aucun nom ne circule sur Internet, seulement « connu » ou « inconnu ».</p></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-analyses">
+      <div class="grid">
+        <div class="card c3 stat"><div class="k">Durée d'observation</div><div class="v" id="aDuree">–</div></div>
+        <div class="card c3 stat"><div class="k">Lampes allumées</div><div class="v" id="aLampes">–</div></div>
+        <div class="card c3 stat"><div class="k">Détections caméra</div><div class="v" id="aVision">0</div></div>
+        <div class="card c3 stat"><div class="k">Alarmes</div><div class="v" id="aAlarmes">0</div></div>
+        <div class="card c6"><h2>Température <small>°C</small></h2><div class="fig"><canvas data-g="temp"></canvas></div><div class="leg"><span style="--c:#e8590c">Séjour</span><span style="--c:#8b93a0">Consigne</span><span style="--c:#2f8fd8">Ventilateur</span></div></div>
+        <div class="card c6"><h2>Lumière et présence <small>%</small></h2><div class="fig"><canvas data-g="lum"></canvas></div><div class="leg"><span style="--c:#8b93a0">Lumière extérieure</span><span style="--c:#7048e8">Présence</span><span style="--c:#f2a516">Lampe séjour</span></div></div>
+        <div class="card c12"><h2>Énergie <small>W</small></h2><div class="fig"><canvas data-g="energie"></canvas></div><div class="leg"><span style="--c:#f2a516">Production solaire</span><span style="--c:#e03131">Consommation</span></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-reglages">
+      <div class="grid">
+        <div class="card c6">
+          <h2>Connexion</h2>
+          <div class="form">
+            <label>Identifiant de la maison<input type="text" id="maisonId" spellcheck="false" autocomplete="off"></label>
+            <div><div class="k" style="margin-bottom:6px">Mode de connexion</div><div class="seg" id="segTransport"><button data-t="mqtt">Internet (MQTT)</button><button data-t="local">Hors ligne</button></div></div>
+            <p class="note" style="margin:0">« Hors ligne » relie ce site au jumeau 3D ouvert dans le même navigateur, sans Internet.</p>
+            <label>Adresse du flux vidéo<input type="text" id="fluxUrl" spellcheck="false"></label>
+          </div>
+        </div>
+        <div class="card c6">
+          <h2>Partager avec mon équipe</h2>
+          <p class="mute" style="margin-top:0">Ce lien ouvre le site directement sur votre maison, sur n'importe quel téléphone.</p>
+          <input type="text" id="lienPartage" readonly aria-label="Lien de partage">
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn dark" id="copier">Copier le lien</button><a class="btn" id="lien3d" href="../jumeau-3d/index.html">Jumeau 3D</a><a class="btn" id="lienMaquette" href="../maquette-3d/index.html">Maquette 3D</a></div>
+        </div>
+        <div class="card c6">
+          <h2>Code de désarmement</h2>
+          <div class="form"><label>Nouveau code (4 chiffres)<input type="password" id="nouveauCode" inputmode="numeric" maxlength="4" autocomplete="off"></label><button class="btn dark" id="majCode" style="justify-self:start">Enregistrer</button></div>
+          <p class="note">Code par défaut : 1234, enregistré sur chaque appareil. Il évite une fausse manœuvre ; la vraie protection est un identifiant de maison difficile à deviner.</p>
+        </div>
+        <div class="card c6"><h2>Journal complet</h2><div class="liste" data-log="30"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Navigation">
+    <a href="#accueil"><svg><use href="#i-home"/></svg>Accueil</a>
+    <a href="#securite"><svg><use href="#i-shield"/></svg>Sécurité<i class="dot"></i></a>
+    <a href="#pieces"><svg><use href="#i-lamp"/></svg>Lumières</a>
+    <a href="#climat"><svg><use href="#i-thermo"/></svg>Climat</a>
+    <a href="#energie"><svg><use href="#i-bolt"/></svg>Énergie</a>
+    <a href="#camera"><svg><use href="#i-cam"/></svg>Caméra</a>
+    <a href="#reglages"><svg><use href="#i-gear"/></svg>Plus</a>
+  </nav>
+</div>
+
+<dialog id="pin">
+  <h2 style="margin:0;text-align:center;font-size:18px">Code de désarmement</h2>
+  <div class="points" id="points"><i></i><i></i><i></i><i></i></div>
+  <div class="pave" id="pave"></div>
+  <button class="btn" style="width:100%;margin-top:12px" id="annulerPin">Annuler</button>
+</dialog>
+<div id="toast"></div>
 
 <script>
 {
 const $ = id => document.getElementById(id);
-const NOM_ALARME = { desarmee:'Désarmée', armee:'Armée', verification:'Vérification…', declenchee:'ALARME !' };
-const DETAIL = { desarmee:'La maison est ouverte. Les alarmes gaz restent actives.', armee:'Toute ouverture ou présence sera vérifiée par la caméra.', verification:'Quelque chose a été détecté. La caméra a 15 s pour reconnaître un résident.', declenchee:'' };
-const NOM_CAUSE = { porte:'Porte ouverte sans résident reconnu', presence:'Présence détectée dans la maison', intrus:'Visage inconnu à la porte', gaz:'Gaz détecté dans la cuisine' };
-const params = new URLSearchParams(location.search);
+const $$ = s => [...document.querySelectorAll(s)];
 const lire = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-$('maisonId').value = params.get('maison') || lire('maisonId') || 'maison-ia-elnovic';
-$('fluxUrl').value = lire('fluxUrl') || 'http://localhost:8081/flux';
-let transport = params.get('transport') || lire('transport') || 'mqtt';
+const params = new URLSearchParams(location.search);
 
+const NOM_ALARME = { desarmee:'Désarmée', armee:'Armée', verification:'Vérification…', declenchee:'ALARME !' };
+const DETAIL = { desarmee:'La maison est ouverte. La détection de gaz reste active.', armee:'Toute ouverture ou présence sera vérifiée par la caméra.', verification:'Une présence a été détectée : la caméra a 15 s pour reconnaître un résident.', declenchee:'' };
+const CAUSE = { porte:'Porte ouverte sans résident reconnu', presence:'Présence détectée dans la maison', intrus:'Visage inconnu à la porte', gaz:'Gaz détecté dans la cuisine', panique:'Alarme SOS déclenchée manuellement' };
+const PAGES = { accueil:['Accueil', 'Vue d\'ensemble de la maison'], securite:['Sécurité', 'Alarme, capteurs et urgence'], pieces:['Éclairage', 'Lumières pièce par pièce'], climat:['Climat', 'Température et ventilation'], energie:['Énergie', 'Solaire, batterie et économies'], camera:['Caméra IA', 'Vision par ordinateur à l\'entrée'], analyses:['Analyses', 'Données en temps réel'], reglages:['Réglages', 'Connexion, partage et code'] };
+
+function route() {
+  const id = (location.hash || '#accueil').slice(1), p = PAGES[id] ? id : 'accueil';
+  for (const s of $$('section.page')) s.classList.toggle('on', s.id === 'p-' + p);
+  for (const a of $$('nav a')) a.classList.toggle('on', a.getAttribute('href') === '#' + p);
+  $('titre').textContent = PAGES[p][0]; $('sousTitre').textContent = PAGES[p][1];
+  scrollTo(0, 0); dessinerGraphes();
+}
+addEventListener('hashchange', route);
+
+$('maisonId').value = params.get('maison') || lire('maisonId') || 'maison-ia-elnovic';
+$('fluxUrl').value = params.get('flux') || lire('fluxUrl') || 'http://localhost:8081/flux';
+let transport = params.get('transport') || lire('transport') || 'mqtt';
 const bus = new MaisonBus();
-let etat = null, dernierEtat = 0, espDispo = null, visionVu = 0, debut = Date.now();
-const histo = [];  // {t, temp, cons, vent, sol, conso, lum, pres, lamp}
-const stats = { lampes:0, vision:0, alarmes:0 };
+let etat = null, dernierEtat = 0, espDispo = null, visionPython = 0;
+const debut = Date.now(), histo = [], stats = { lampes:0, vision:0, alarmes:0 }, evts = [];
 function pastille(id, cls, txt) { const p = $(id); p.className = 'pill ' + cls; p.querySelector('span').textContent = txt; }
-bus.surStatut = (s, txt) => pastille('pBus', s === 'ok' ? 'ok' : s === 'attente' ? 'warn' : 'err', txt);
+bus.surStatut = (s, txt) => pastille('pBus', s === 'ok' ? 'ok' : s === 'attente' ? 'warn' : 'err', s === 'ok' ? (transport === 'local' ? 'Hors ligne (local)' : 'Connecté') : txt);
 function connecter() {
-  ecrire('maisonId', $('maisonId').value.trim()); ecrire('transport', transport);
-  for (const b of $('segTransport').querySelectorAll('button')) b.classList.toggle('on', b.dataset.t === transport);
-  etat = null; bus.connecter(transport, $('maisonId').value.trim() || 'maison-ia-elnovic');
+  const id = $('maisonId').value.trim() || 'maison-ia-elnovic';
+  ecrire('maisonId', id); ecrire('transport', transport);
+  for (const b of $$('#segTransport button')) b.classList.toggle('on', b.dataset.t === transport);
+  etat = null; bus.connecter(transport, id); majPartage();
 }
 bus.on((sub, txt) => {
   if (sub === 'etat') { try { recevoirEtat(JSON.parse(txt)); } catch (e) {} }
-  else if (sub === 'disponible') { espDispo = txt === 'online'; }
+  else if (sub === 'disponible') espDispo = txt === 'online';
+  else if (sub === 'vision/etat') visionPython = txt === 'online' ? Date.now() : 0;
   else if (sub === 'evenement') { try { const e = JSON.parse(txt); evenement(e.type, e.detail); } catch (e) {} }
-  else if (sub === 'vision') {
-    try {
-      const v = JSON.parse(txt), connu = v.resultat === 'connu'; stats.vision++; visionVu = Date.now();
-      $('visRes').className = connu ? 'connu' : 'inconnu';
-      $('visRes').textContent = `${connu ? 'Résident reconnu' : 'Visage inconnu'} · ${(+v.score || 0).toFixed(2)} · ${new Date().toLocaleTimeString('fr-FR')}`;
-      journal(`Caméra : ${connu ? 'résident reconnu' : 'visage inconnu'} (${v.source === 'webcam' ? 'webcam' : 'jumeau 3D'})`);
-    } catch (e) {}
-  }
+  else if (sub === 'vision') { try { vision(JSON.parse(txt)); } catch (e) {} }
 });
-function cmd(sub, v) { if (!bus.publier('cmd/' + sub, String(v))) journal('Pas connecté : commande non envoyée'); }
+function cmd(sub, v) { if (!bus.publier('cmd/' + sub, String(v))) toast('Pas connecté à la maison : commande non envoyée', 'var(--red)'); }
 
 let precedent = 0;
 function recevoirEtat(e) {
-  const maintenant = Date.now();
-  if (etat && precedent) { const dt = (maintenant - precedent) / 1000; stats.lampes += dt * ((etat.lumiere.salon || 0) + (etat.lumiere.chambre || 0)); }
-  precedent = maintenant; etat = e; dernierEtat = maintenant;
-  const der = histo[histo.length - 1];
-  if (!der || maintenant - der.t >= 1000) {
-    histo.push({ t:maintenant, temp:e.t, cons:e.clim.consigne, vent:e.clim.ventilo, sol:e.energie.solaire_w, conso:e.energie.conso_w ?? 0, lum:e.lum, pres:(e.pres.salon || e.pres.chambre) ? 1 : 0, lamp:e.lumiere.salon });
-    while (histo.length > 600) histo.shift();
+  const n = Date.now();
+  if (etat && precedent) stats.lampes += (n - precedent) / 1000 * ((etat.lumiere.salon || 0) + (etat.lumiere.chambre || 0));
+  precedent = n; etat = e; dernierEtat = n;
+  const d = histo[histo.length - 1];
+  if (!d || n - d.t >= 1000) {
+    histo.push({ t:n, temp:e.t, cons:e.clim.consigne, vent:e.clim.ventilo, sol:e.energie.solaire_w, conso:e.energie.conso_w ?? 0, lum:e.lum, pres:(e.pres.salon || e.pres.chambre) ? 1 : 0, lamp:e.lumiere.salon });
+    while (histo.length > 900) histo.shift();
   }
   afficher(e);
 }
-function seg(sel, v) { for (const b of document.querySelector(sel).querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === v); }
+const f1 = v => (+v).toFixed(1);
+function champs(nom, val) { for (const el of $$(`[data-f="${nom}"]`)) el.textContent = val; }
+function tag(nom, txt, cls) { for (const el of $$(`[data-f="${nom}"]`)) { el.textContent = txt; el.className = 'tag ' + cls; } }
+function seg(sel, v) { for (const s of $$(sel)) for (const b of s.querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === v); }
 function afficher(e) {
-  const a = $('alarme'); a.className = 'card wide ' + e.alarme;
-  $('aEtat').textContent = NOM_ALARME[e.alarme] || e.alarme;
-  $('aDetail').textContent = (e.alarme === 'declenchee' || e.alarme === 'verification') && e.cause ? (NOM_CAUSE[e.cause] || e.cause) + (e.porte ? ' · porte ouverte' : '') : DETAIL[e.alarme] + (e.porte ? ' Porte d\'entrée ouverte.' : ' Porte d\'entrée fermée.');
-  $('lumExt').textContent = `lumière extérieure ${e.lum} %`;
-  for (const [p, cle] of [['Salon', 'salon'], ['Chambre', 'chambre']]) {
-    $('amp' + p).classList.toggle('on', !!e.lumiere[cle]);
-    $('pres' + p).textContent = (e.pres[cle] ? 'Présence détectée' : 'Personne') + ' · lampe ' + (e.lumiere[cle] ? 'allumée' : 'éteinte');
-    seg(`[data-cmd="lumiere/${cle}"]`, e.mode_lum[cle]);
+  const al = e.alarme;
+  for (const s of $$('[data-secu]')) s.className = 'card c12 secu ' + al;
+  for (const u of $$('[data-secu] .anneau use')) u.setAttribute('href', al === 'armee' ? '#i-shieldok' : al === 'declenchee' ? '#i-alert' : '#i-shield');
+  champs('alarmeTxt', NOM_ALARME[al] || al);
+  champs('alarmeDetail', (al === 'declenchee' || al === 'verification') && e.cause ? CAUSE[e.cause] || e.cause : DETAIL[al]);
+  for (const d of $$('nav .dot')) d.classList.toggle('on', al === 'declenchee');
+  tag('porteTag', e.porte ? 'Ouverte' : 'Fermée', e.porte ? 'warn' : 'ok');
+  const pr = e.pres.salon || e.pres.chambre;
+  tag('presTag', pr ? 'Détectée' : 'Aucune', pr ? 'warn' : 'ok');
+  tag('gazTag', e.gaz >= 60 ? 'DANGER ' + e.gaz + ' %' : 'Normal · ' + e.gaz + ' %', e.gaz >= 60 ? 'err' : 'ok');
+  champs('temp', e.t == null ? '–' : f1(e.t) + ' °C'); champs('hum', e.h == null ? '' : 'humidité ' + Math.round(e.h) + ' %');
+  champs('climTxt', e.energie.eco ? 'Coupée (mode éco)' : e.clim.mode === 'off' ? 'Arrêt manuel' : e.clim.ventilo ? 'Rafraîchit' : e.clim.chauffage ? 'Chauffe' : 'En veille');
+  champs('consigne', f1(e.clim.consigne) + ' °C');
+  champs('vent', e.clim.ventilo ? 'En marche' : 'Arrêté'); champs('chauf', e.clim.chauffage ? 'En marche' : 'Arrêté');
+  champs('presSalonCourt', e.pres.salon ? 'Oui' : 'Non');
+  if (e.t != null) $('arc').setAttribute('stroke-dasharray', `${Math.max(0, Math.min(1, (e.t - 10) / 30)) * 396} 528`);
+  champs('nbLampes', ((e.lumiere.salon || 0) + (e.lumiere.chambre || 0)) + ' / 2'); champs('lum', e.lum + ' %');
+  const pres = [e.pres.salon && 'séjour', e.pres.chambre && 'chambre'].filter(Boolean);
+  champs('presTxt', pres.length ? 'Présence : ' + pres.join(', ') : 'Personne dans la maison');
+  for (const [p, k] of [['Salon', 'salon'], ['Chambre', 'chambre']]) {
+    champs('pres' + p, (e.pres[k] ? 'Présence détectée' : 'Personne') + ' · lampe ' + (e.lumiere[k] ? 'allumée' : 'éteinte'));
+    for (const l of $$(`[data-lampe="${k}"]`)) l.classList.toggle('on', !!e.lumiere[k]);
+    seg(`[data-cmd="lumiere/${k}"]`, e.mode_lum[k]);
   }
-  $('temp').textContent = e.t == null ? '–' : (+e.t).toFixed(1) + ' °C';
-  $('consigne').textContent = (+e.clim.consigne).toFixed(1) + ' °C';
-  $('hum').textContent = e.h == null ? '–' : Math.round(e.h) + ' %';
-  $('vent').textContent = e.clim.ventilo ? 'En marche' : 'Arrêté'; $('chauf').textContent = e.clim.chauffage ? 'En marche' : 'Arrêté';
-  $('climEtat').textContent = e.energie.eco ? 'coupée (mode éco)' : e.clim.mode === 'off' ? 'arrêt manuel' : e.clim.ventilo ? 'rafraîchit' : e.clim.chauffage ? 'chauffe' : 'en veille';
   seg('[data-cmd="clim"]', e.clim.mode);
   const en = e.energie;
-  $('sol').textContent = (+en.solaire_w).toFixed(1) + ' W'; $('conso').textContent = en.conso_w != null ? (+en.conso_w).toFixed(1) + ' W' : '–';
-  $('wh').textContent = en.wh != null ? (en.wh * 1000).toFixed(0) + ' mWh' : '–';
-  $('economie').textContent = en.wh_ref > 0.0005 ? Math.round(100 * (1 - en.wh / en.wh_ref)) + ' %' : '–';
-  $('sEvite').textContent = en.wh_ref != null ? ((en.wh_ref - en.wh) * 1000).toFixed(0) + ' mWh' : '–';
-  $('bat').textContent = en.batterie + ' %'; $('jauge').firstElementChild.style.width = en.batterie + '%';
-  $('jauge').classList.toggle('eco', !!en.eco); $('ecoBadge').textContent = en.eco ? 'mode éco activé' : '';
+  champs('bat', en.batterie + ' %'); champs('sol', f1(en.solaire_w) + ' W'); champs('solTxt', 'Production ' + f1(en.solaire_w) + ' W');
+  champs('conso', en.conso_w != null ? f1(en.conso_w) + ' W' : '–');
+  champs('eco', en.wh_ref > 0.0005 ? Math.round(100 * (1 - en.wh / en.wh_ref)) + ' %' : '–');
+  champs('wh', en.wh != null ? Math.round(en.wh * 1000) + ' mWh' : '–'); champs('whRef', en.wh_ref != null ? Math.round(en.wh_ref * 1000) + ' mWh' : '–');
+  champs('evite', en.wh_ref != null ? Math.round((en.wh_ref - en.wh) * 1000) + ' mWh' : '–');
+  champs('ecoMode', en.eco ? 'mode éco activé' : '');
+  for (const b of $$('[data-barre]')) { b.classList.toggle('eco', !!en.eco); b.firstElementChild.style.width = en.batterie + '%'; }
 }
 function majPastilles() {
   const frais = Date.now() - dernierEtat < 6000;
-  if (!etat) pastille('pEsp', 'warn', 'ESP32 : en attente');
-  else if (!frais || espDispo === false) pastille('pEsp', 'err', 'ESP32 hors ligne');
-  else pastille('pEsp', 'ok', { jumeau:'ESP32 · capteurs du jumeau 3D', materiel:'ESP32 · capteurs réels', emule:'Émulation hors ligne' }[etat.source] || 'ESP32 en ligne');
-  pastille('pVision', camOk ? 'ok' : visionVu ? 'ok' : 'warn', camOk ? 'Caméra IA : flux en direct' : visionVu ? 'Caméra IA : active' : 'Caméra IA : en attente');
+  if (!etat) pastille('pEsp', 'warn', 'Maison : en attente');
+  else if (!frais || espDispo === false) pastille('pEsp', 'err', 'Maison hors ligne');
+  else pastille('pEsp', 'ok', { jumeau:'ESP32 · jumeau 3D', materiel:'ESP32 · maquette', emule:'Émulation' }[etat.source] || 'Maison en ligne');
+  const vOk = camOk || (visionPython && Date.now() - visionPython < 120000);
+  pastille('pVision', vOk ? 'ok' : 'warn', camOk ? 'Caméra en direct' : vOk ? 'Caméra active' : 'Caméra en attente');
   const s = Math.round((Date.now() - debut) / 1000);
-  $('duree').textContent = `depuis ${Math.floor(s / 60)} min ${s % 60} s`;
-  const l = Math.round(stats.lampes);
-  $('sLampes').textContent = l < 60 ? l + ' s' : Math.floor(l / 60) + ' min';
-  $('sVision').textContent = stats.vision; $('sAlarmes').textContent = stats.alarmes;
+  $('aDuree').textContent = s < 60 ? s + ' s' : Math.floor(s / 60) + ' min';
+  const l = Math.round(stats.lampes); $('aLampes').textContent = l < 60 ? l + ' s' : Math.round(l / 60) + ' min';
+  $('aVision').textContent = stats.vision; $('aAlarmes').textContent = stats.alarmes;
 }
 setInterval(majPastilles, 1000);
 
-// ---------- Graphiques ----------
-function graphe(id, series, yMin, yMax) {
-  const c = $(id), r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
-  if (!r.width) return;
-  c.width = r.width * dpr; c.height = r.height * dpr;
+const TXT_EVT = { armee:'Alarme armée', desarmee:'Alarme désarmée', verification:'Vérification en cours', declenchee:'ALARME DÉCLENCHÉE', bienvenue:'Résident reconnu, alarme désarmée', visiteur:'Visiteur inconnu à la porte', energie:'Énergie' };
+const ICO_EVT = { armee:'i-lock', desarmee:'i-unlock', verification:'i-shield', declenchee:'i-alert', bienvenue:'i-user', visiteur:'i-user', energie:'i-batt', vision:'i-cam', info:'i-home' };
+const SECU = ['armee', 'desarmee', 'verification', 'declenchee', 'bienvenue', 'visiteur', 'vision'];
+function ajouterEvt(type, titre, detail) { evts.unshift({ type, titre, detail, t:new Date() }); while (evts.length > 60) evts.pop(); rendreLog(); }
+function rendreLog() {
+  for (const l of $$('[data-log]')) {
+    const liste = evts.filter(e => l.dataset.filtre !== 'secu' || SECU.includes(e.type)).slice(0, +l.dataset.log);
+    l.innerHTML = liste.length ? liste.map(e => `<div class="it"><div class="ico" style="color:${e.type === 'declenchee' ? 'var(--red)' : 'inherit'}"><svg><use href="#${ICO_EVT[e.type] || 'i-home'}"/></svg></div><div><b></b><small></small></div><span class="mute" style="font-size:12px">${e.t.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span></div>`).join('') : '<p class="mute" style="margin:0">Aucun évènement pour l\'instant.</p>';
+    l.querySelectorAll('.it').forEach((it, i) => { it.querySelector('b').textContent = liste[i].titre; it.querySelector('small').textContent = liste[i].detail || ''; });
+  }
+}
+function evenement(type, detail) {
+  if (type === 'declenchee') { stats.alarmes++; toast('ALARME : ' + (CAUSE[detail] || detail), 'var(--red)'); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {} }
+  ajouterEvt(type, TXT_EVT[type] || type, CAUSE[detail] || detail || '');
+}
+function vision(v) {
+  const connu = v.resultat === 'connu'; stats.vision++;
+  if (v.source === 'webcam') visionPython = Date.now();
+  const txt = connu ? 'Résident reconnu' : 'Visage inconnu', det = `score ${(+v.score || 0).toFixed(2)} · ${v.source === 'webcam' ? 'caméra réelle' : 'jumeau 3D'}`;
+  champs('visionTxt', txt + ' · ' + new Date().toLocaleTimeString('fr-FR')); tag('visionTag', connu ? 'Connu' : 'Inconnu', connu ? 'ok' : 'err');
+  ajouterEvt('vision', 'Caméra : ' + txt.toLowerCase(), det);
+  const l = $('visions'); if (l.querySelector('p')) l.innerHTML = '';
+  const it = document.createElement('div'); it.className = 'it';
+  it.innerHTML = `<div class="ico" style="color:${connu ? 'var(--green)' : 'var(--red)'}"><svg><use href="#i-user"/></svg></div><div><b></b><small></small></div><span class="tag ${connu ? 'ok' : 'err'}">${connu ? 'Connu' : 'Inconnu'}</span>`;
+  it.querySelector('b').textContent = txt; it.querySelector('small').textContent = new Date().toLocaleTimeString('fr-FR') + ' · ' + det;
+  l.prepend(it); while (l.children.length > 8) l.lastChild.remove();
+}
+function toast(txt, c) { const n = document.createElement('div'); n.className = 'notif'; n.style.setProperty('--c', c || 'var(--blue)'); n.textContent = txt; $('toast').prepend(n); setTimeout(() => n.remove(), 5000); }
+
+// Code de désarmement
+const code = () => lire('codeAlarme') || '1234';
+let saisie = '', apresCode = null;
+function demanderCode(fn) {
+  saisie = ''; apresCode = fn; majPoints();
+  $('pave').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '⌫'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}" aria-label="${k === '⌫' ? 'Effacer' : k}">${k}</button>`).join('');
+  $('pin').showModal();
+}
+function majPoints() { $$('#points i').forEach((p, i) => p.classList.toggle('on', i < saisie.length)); }
+$('pave').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  saisie = b.dataset.k === '⌫' ? saisie.slice(0, -1) : (saisie + b.dataset.k).slice(0, 4); majPoints();
+  if (saisie.length === 4) {
+    if (saisie === code()) { $('pin').close(); apresCode && apresCode(); }
+    else { const p = $('points'); p.classList.remove('faux'); void p.offsetWidth; p.classList.add('faux'); saisie = ''; setTimeout(majPoints, 300); }
+  }
+});
+addEventListener('keydown', ev => { if (!$('pin').open) return; if (/^[0-9]$/.test(ev.key)) $('pave').querySelector(`[data-k="${ev.key}"]`)?.click(); if (ev.key === 'Backspace') $('pave').querySelector('[data-k="⌫"]')?.click(); });
+$('annulerPin').onclick = () => $('pin').close();
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'armer') { cmd('alarme', 'armer'); toast('Alarme armée : 15 s pour sortir', 'var(--green)'); }
+  else if (a === 'desarmer' || a === 'couper') demanderCode(() => { cmd('alarme', 'desarmer'); toast(a === 'couper' ? 'Sirène coupée, alarme désarmée' : 'Alarme désarmée', 'var(--blue)'); });
+  else if (a === 'moins' || a === 'plus') cmd('consigne', ((etat ? +etat.clim.consigne : 24) + (a === 'plus' ? 0.5 : -0.5)).toFixed(1));
+});
+for (const s of $$('[data-cmd]')) s.addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) cmd(s.dataset.cmd, b.dataset.v); });
+{ // Bouton SOS : maintenir 2 s
+  const b = $('sos'), fill = b.querySelector('.fill'); let t0 = 0, raf = 0;
+  const stop = () => { cancelAnimationFrame(raf); t0 = 0; fill.style.transform = 'scaleX(0)'; };
+  const tick = () => { const p = Math.min(1, (performance.now() - t0) / 2000); fill.style.transform = `scaleX(${p})`; if (p >= 1) { stop(); cmd('alarme', 'panique'); toast('Alarme SOS envoyée', 'var(--red)'); } else raf = requestAnimationFrame(tick); };
+  const go = () => { if (!t0) { t0 = performance.now(); raf = requestAnimationFrame(tick); } };
+  b.addEventListener('pointerdown', ev => { ev.preventDefault(); go(); });
+  for (const e of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(e, stop);
+  b.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+  b.addEventListener('keyup', stop);
+  b.addEventListener('contextmenu', ev => ev.preventDefault());
+}
+$('segTransport').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) { transport = b.dataset.t; connecter(); } });
+$('maisonId').addEventListener('change', connecter);
+$('fluxUrl').addEventListener('change', () => { ecrire('fluxUrl', $('fluxUrl').value.trim()); chargerCam(); majPartage(); });
+$('majCode').onclick = () => { const c = $('nouveauCode').value.trim(); if (/^\d{4}$/.test(c)) { ecrire('codeAlarme', c); $('nouveauCode').value = ''; toast('Code enregistré sur cet appareil', 'var(--green)'); } else toast('Le code doit contenir 4 chiffres', 'var(--red)'); };
+function majPartage() {
+  const id = encodeURIComponent($('maisonId').value.trim());
+  const u = new URL(location.href); u.hash = ''; u.search = '?maison=' + id;
+  $('lienPartage').value = u.toString();
+  const mode = transport === 'local' ? 'local' : 'jumeau';
+  $('lien3d').href = `../jumeau-3d/index.html?maison=${id}&mode=${mode}`;
+  $('lienMaquette').href = `../maquette-3d/index.html?maison=${id}&mode=${mode}`;
+}
+$('copier').onclick = async () => { try { await navigator.clipboard.writeText($('lienPartage').value); toast('Lien copié', 'var(--green)'); } catch (e) { $('lienPartage').select(); toast('Sélectionnez le lien puis copiez-le', 'var(--amber)'); } };
+
+// Caméra (flux MJPEG du programme Python)
+let camOk = false, essaiCam = 0;
+function chargerCam() {
+  clearTimeout(essaiCam);
+  const url = $('fluxUrl').value.trim(), src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+  const test = new Image();
+  test.onload = () => {
+    camOk = true;
+    for (const c of $$('[data-cam]')) {
+      c.querySelector('.camMsg').hidden = true;
+      if (!c.querySelector('img')) { const i = document.createElement('img'); i.alt = 'Flux de la caméra analysé par OpenCV'; i.src = src; i.onerror = () => { camOk = false; chargerCam(); }; const l = document.createElement('span'); l.className = 'live'; l.textContent = 'EN DIRECT'; c.append(i, l); }
+    }
+  };
+  test.onerror = () => { camOk = false; for (const c of $$('[data-cam]')) { c.querySelector('.camMsg').hidden = false; c.querySelector('img')?.remove(); c.querySelector('.live')?.remove(); } essaiCam = setTimeout(chargerCam, 8000); };
+  test.src = src;
+}
+
+// Graphiques temps réel
+function graphe(c, series, yMin, yMax) {
+  const r = c.getBoundingClientRect(); if (!r.width) return;
+  const dpr = devicePixelRatio || 1; c.width = r.width * dpr; c.height = r.height * dpr;
   const g = c.getContext('2d'); g.scale(dpr, dpr);
-  const W = r.width, H = r.height, ml = 34, mb = 18, mt = 6, mr = 6;
-  const css = getComputedStyle(document.documentElement), ligne = css.getPropertyValue('--line').trim() || '#ddd';
-  g.font = '11px Figtree, sans-serif'; g.fillStyle = '#868e96'; g.strokeStyle = '#8888'; g.lineWidth = 1;
+  const W = r.width, H = r.height, ml = 34, mb = 20, mt = 6, mr = 8;
+  g.font = '11px Figtree, sans-serif'; g.fillStyle = '#8b93a0'; g.strokeStyle = '#8b93a0'; g.lineWidth = 1;
   const Y = v => mt + (1 - (v - yMin) / (yMax - yMin)) * (H - mt - mb);
-  for (let i = 0; i <= 4; i++) { const v = yMin + (yMax - yMin) * i / 4, y = Y(v); g.globalAlpha = 0.25; g.beginPath(); g.moveTo(ml, y); g.lineTo(W - mr, y); g.stroke(); g.globalAlpha = 1; g.fillText(Math.round(v * 10) / 10, 2, y + 4); }
+  for (let i = 0; i <= 4; i++) { const v = yMin + (yMax - yMin) * i / 4, y = Y(v); g.globalAlpha = 0.2; g.beginPath(); g.moveTo(ml, y); g.lineTo(W - mr, y); g.stroke(); g.globalAlpha = 1; g.fillText(Math.round(v * 10) / 10, 2, y + 4); }
   if (histo.length < 2) { g.fillText('En attente de données…', ml + 8, H / 2); return; }
-  const t1 = histo[histo.length - 1].t, t0 = Math.max(histo[0].t, t1 - 10 * 60000);
-  const X = t => ml + (t - t0) / Math.max(1, t1 - t0) * (W - ml - mr);
-  const span = (t1 - t0) / 1000; g.fillText(span < 90 ? `-${Math.round(span)} s` : `-${Math.round(span / 60)} min`, ml, H - 3); g.fillText('maintenant', W - mr - 62, H - 3);
+  const t1 = histo[histo.length - 1].t, t0 = Math.max(histo[0].t, t1 - 10 * 60000), X = t => ml + (t - t0) / Math.max(1, t1 - t0) * (W - ml - mr);
+  const span = (t1 - t0) / 1000; g.fillText(span < 90 ? `-${Math.round(span)} s` : `-${Math.round(span / 60)} min`, ml, H - 4); g.fillText('maintenant', W - mr - 60, H - 4);
   for (const s of series) {
     const pts = histo.filter(h => h.t >= t0 && h[s.k] != null);
-    if (s.bande) { g.fillStyle = s.c; g.globalAlpha = 0.15; for (const h of pts) if (h[s.k]) g.fillRect(X(h.t), mt, Math.max(2, (W - ml) / 300), H - mt - mb); g.globalAlpha = 1; continue; }
-    g.strokeStyle = s.c; g.lineWidth = s.w || 2; g.setLineDash(s.dash || []); g.beginPath();
-    pts.forEach((h, i) => { const v = s.f ? s.f(h[s.k]) : h[s.k], x = X(h.t), y = Y(v); i ? (s.marche ? (g.lineTo(x, g._y), g.lineTo(x, y)) : g.lineTo(x, y)) : g.moveTo(x, y); g._y = y; });
+    if (s.bande) { g.fillStyle = s.c; g.globalAlpha = 0.14; for (const h of pts) if (h[s.k]) g.fillRect(X(h.t), mt, Math.max(2, (W - ml) / 300), H - mt - mb); g.globalAlpha = 1; continue; }
+    g.strokeStyle = s.c; g.lineWidth = s.w || 2.2; g.setLineDash(s.dash || []); g.beginPath(); let py = 0;
+    pts.forEach((h, i) => { const v = s.f ? s.f(h[s.k]) : h[s.k], x = X(h.t), y = Y(v); if (!i) g.moveTo(x, y); else if (s.marche) { g.lineTo(x, py); g.lineTo(x, y); } else g.lineTo(x, y); py = y; });
     g.stroke(); g.setLineDash([]);
   }
 }
 function dessinerGraphes() {
   const temps = histo.map(h => h.temp).filter(v => v != null).concat(histo.map(h => h.cons));
   const tmin = Math.floor(Math.min(20, ...temps) - 1), tmax = Math.ceil(Math.max(30, ...temps) + 1);
-  graphe('gTemp', [{ k:'vent', c:'#2f8fd8', bande:true }, { k:'cons', c:'#868e96', dash:[5, 4], marche:true }, { k:'temp', c:'#e8590c' }], tmin, tmax);
-  const emax = Math.max(6.5, ...histo.map(h => Math.max(h.sol || 0, h.conso || 0))) + 0.5;
-  graphe('gEnergie', [{ k:'sol', c:'#f2a516' }, { k:'conso', c:'#c92a2a', marche:true }], 0, Math.ceil(emax));
-  graphe('gLum', [{ k:'pres', c:'#7048e8', bande:true }, { k:'lum', c:'#868e96' }, { k:'lamp', c:'#f2a516', marche:true, f:v => v * 100, w:3 }], 0, 100);
+  const emax = Math.ceil(Math.max(6.5, ...histo.map(h => Math.max(h.sol || 0, h.conso || 0))) + 0.5);
+  for (const c of $$('canvas[data-g]')) {
+    if (!c.closest('section.page.on')) continue;
+    if (c.dataset.g === 'temp') graphe(c, [{ k:'vent', c:'#2f8fd8', bande:true }, { k:'cons', c:'#8b93a0', dash:[5, 4], marche:true }, { k:'temp', c:'#e8590c' }], tmin, tmax);
+    if (c.dataset.g === 'energie') graphe(c, [{ k:'sol', c:'#f2a516' }, { k:'conso', c:'#e03131', marche:true }], 0, emax);
+    if (c.dataset.g === 'lum') graphe(c, [{ k:'pres', c:'#7048e8', bande:true }, { k:'lum', c:'#8b93a0' }, { k:'lamp', c:'#f2a516', marche:true, f:v => v * 100, w:3 }], 0, 100);
+  }
 }
 setInterval(dessinerGraphes, 1000);
 addEventListener('resize', dessinerGraphes);
 
-// ---------- Caméra ----------
-let camOk = false;
-function chargerCam() {
-  const img = $('camImg'); camOk = false; img.hidden = true; $('camLive').hidden = true;
-  img.onload = () => { camOk = true; img.hidden = false; $('camLive').hidden = false; $('camMsg').hidden = true; };
-  img.onerror = () => { camOk = false; img.hidden = true; $('camLive').hidden = true; $('camMsg').hidden = false; setTimeout(chargerCam, 8000); };
-  img.src = $('fluxUrl').value.trim() + (/\?/.test($('fluxUrl').value) ? '&' : '?') + 't=' + Date.now();
-}
-$('fluxUrl').addEventListener('change', () => { ecrire('fluxUrl', $('fluxUrl').value.trim()); chargerCam(); });
-
-// ---------- Journal ----------
-function journal(txt) {
-  const li = document.createElement('li'); li.innerHTML = `<time>${new Date().toLocaleTimeString('fr-FR')}</time><span></span>`;
-  li.lastChild.textContent = txt; $('log').prepend(li); while ($('log').children.length > 100) $('log').lastChild.remove();
-}
-function evenement(type, detail) {
-  if (type === 'declenchee') stats.alarmes++;
-  journal({ armee:'Alarme armée', desarmee:'Alarme désarmée', verification:'Vérification en cours : ' + (NOM_CAUSE[detail] || detail).toLowerCase(),
-    declenchee:'ALARME : ' + (NOM_CAUSE[detail] || detail), bienvenue:'Résident reconnu, alarme désarmée', visiteur:'Visiteur inconnu à la porte', energie:'Énergie : ' + detail }[type] || `${type} ${detail}`);
-  if (type === 'declenchee' && 'vibrate' in navigator) { try { navigator.vibrate([300, 150, 300]); } catch (e) {} }
-}
-
-// ---------- Commandes ----------
-for (const s of document.querySelectorAll('[data-cmd]')) s.addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) cmd(s.dataset.cmd, b.dataset.v); });
-$('bArmer').onclick = () => cmd('alarme', 'armer');
-$('bDesarmer').onclick = () => cmd('alarme', 'desarmer');
-const consigne = () => etat ? +etat.clim.consigne : 24;
-$('cMoins').onclick = () => cmd('consigne', (consigne() - 0.5).toFixed(1));
-$('cPlus').onclick = () => cmd('consigne', (consigne() + 0.5).toFixed(1));
-$('segTransport').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) { transport = b.dataset.t; connecter(); } });
-$('maisonId').addEventListener('change', connecter);
-
-connecter(); chargerCam(); majPastilles(); dessinerGraphes();
-journal('Site de contrôle prêt');
+route(); connecter(); chargerCam(); majPastilles(); rendreLog();
+ajouterEvt('info', 'Site de contrôle ouvert', 'Maison : ' + $('maisonId').value);
 }
 </script>
 </body>

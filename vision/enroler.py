@@ -14,7 +14,8 @@ import time
 import cv2
 import numpy as np
 
-from commun import Vision, charger_base, charger_config, enregistrer_base, ouvrir_camera, dessiner
+from camera import depuis_config
+from commun import Vision, charger_base, charger_config, enregistrer_base, dessiner
 
 p = argparse.ArgumentParser(description="Enrôlement des résidents")
 p.add_argument("--nom", help="prénom du résident à enregistrer")
@@ -42,14 +43,13 @@ if not a.nom:
 
 cfg = charger_config()
 vision = Vision()
-cap = ouvrir_camera(cfg.get("camera", "source", fallback="0"),
-                    cfg.getint("camera", "largeur", fallback=640), cfg.getint("camera", "hauteur", fallback=480))
+cap = depuis_config(cfg)
 empreintes, dernier = [], 0.0
 print(f"Regardez la caméra, tournez légèrement la tête. Capture de {a.photos} empreintes… (Q pour annuler)")
 
 while len(empreintes) < a.photos:
-    ok, image = cap.read()
-    if not ok:
+    image = cap.lire()
+    if image is None:
         break
     visages = vision.visages(image)
     message = "Un seul visage SVP" if len(visages) != 1 else f"{len(empreintes)}/{a.photos}"
@@ -64,7 +64,7 @@ while len(empreintes) < a.photos:
     if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
         break
 
-cap.release()
+cap.fermer()
 cv2.destroyAllWindows()
 if len(empreintes) < 5:
     raise SystemExit("Trop peu d'empreintes capturées, rien n'a été enregistré.")

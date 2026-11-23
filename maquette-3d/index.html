@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette FabLab 3D — Maison intelligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: carnet d'atelier du FabLab : concret, artisanal, précis
+   IDEA: la maquette en carton posée sur l'établi, avec ses vrais modules électroniques et ses fils Dupont
+   PICTURE: vue rapprochée de la maquette à l'échelle 1/20, composants à leur taille réelle
+   COLOUR and TYPE: kraft, bois d'établi, PCB bleus et noirs, fils colorés ; Figtree, écriture au feutre Caveat
+   LAYOUT: barre d'état en haut, scène à gauche, panneau 340px à droite ; sous 820px le panneau passe dessous */
+:root{color-scheme:light dark;--bg:light-dark(#efeae2,#141210);--panel:light-dark(#fffdf9,#1d1a17);--ink:light-dark(#221e1a,#efe9e1);--mute:light-dark(#6d655c,#a49b90);--line:light-dark(#e2dbd0,#332e28);--chip:light-dark(#f3eee6,#27231f);--ok:#2b8a3e;--warn:#e8890c;--err:#e03131}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 Figtree,system-ui,sans-serif;overflow:hidden}
+#app{display:grid;grid-template-rows:auto minmax(0,1fr);height:100vh;height:100dvh}
+header{display:flex;align-items:center;gap:14px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:800}
+header h1 small{font-weight:600;color:var(--mute);margin-left:6px}
+header a{color:var(--mute);font-size:12.5px;font-weight:600}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pill{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:#868e96}
+.pill.ok i{background:var(--ok)}.pill.warn i{background:var(--warn)}.pill.err i{background:var(--err)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:0}
+#scene{position:relative;overflow:hidden;background:#2a2622}
+#scene canvas{display:block}
+#labels{position:absolute;inset:0;pointer-events:none}
+.tag{font:600 11px/1.2 Figtree,sans-serif;color:#fff;background:rgba(20,18,16,.84);padding:3px 7px 3px 6px;border-radius:5px;white-space:nowrap;border-left:3px solid var(--c,#888);transform:translateY(-14px)}
+.tag b{font-weight:800;margin-left:4px;font-size:10.5px}
+.tag.fig{border-left-color:#fff}
+#tools{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.bar{display:flex;flex-wrap:wrap;gap:4px;background:rgba(24,21,18,.8);padding:4px;border-radius:9px}
+.bar button,.bar label{background:none;border:0;color:#efe9e1;border-radius:6px;padding:6px 9px;font:600 12px Figtree,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;min-height:32px}
+.bar button:hover,.bar label:hover{background:rgba(255,255,255,.1)}
+#pip{position:absolute;left:12px;bottom:12px;width:300px;height:225px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 30px rgba(0,0,0,.45);pointer-events:none}
+#pip .h{position:absolute;inset:0 0 auto 0;background:linear-gradient(rgba(0,0,0,.75),transparent);color:#fff;font-size:11.5px;padding:6px 9px;display:flex;justify-content:space-between;gap:8px}
+#pip .h b::before{content:"● ";color:#ff3b30}
+#pip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.det{position:absolute;border:2px solid;border-radius:3px}
+.det span{position:absolute;left:-2px;bottom:100%;font:700 10.5px Figtree,sans-serif;color:#fff;padding:2px 5px;white-space:nowrap;border-radius:3px 3px 0 0}
+#info{position:absolute;right:12px;top:12px;width:300px;background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px;display:none}
+#info.on{display:block}
+#info h3{margin:0 0 2px;font-size:16px}
+#info dl{display:grid;grid-template-columns:86px 1fr;gap:4px 10px;margin:10px 0 0;font-size:13px}
+#info dt{color:var(--mute)}#info dd{margin:0}
+#info button{position:absolute;right:8px;top:8px;border:0;background:none;color:var(--mute);font-size:18px;cursor:pointer;width:32px;height:32px}
+#caption{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:min(520px,calc(100% - 350px));background:rgba(18,16,14,.9);color:#fff;padding:11px 16px;border-radius:10px;font-size:15px;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
+#caption.on{opacity:1}
+#loading{position:absolute;inset:0;display:grid;place-items:center;color:#cfc6ba;text-align:center;padding:20px}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:14px 14px 30px}
+h2{font-size:12px;font-weight:800;margin:18px 0 8px;color:var(--mute)}
+h2:first-child{margin-top:0}
+.seg{display:flex;background:var(--chip);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--ink);padding:7px 5px;border-radius:7px;font:600 12.5px Figtree,sans-serif;cursor:pointer;min-height:34px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible{outline:2px solid #2f8fd8;outline-offset:2px}
+.note{font-size:12px;color:var(--mute);margin:7px 0 0}
+.note.warn{color:var(--warn)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tile{background:var(--chip);border-radius:9px;padding:7px 9px}
+.tile small{display:block;color:var(--mute);font-size:11px;font-weight:600}
+.tile strong{font-size:15.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile.span3{grid-column:span 3;display:flex;justify-content:space-between;gap:8px}
+#tA.armee{background:#e6f4ea;color:#14532d}#tA.verification{background:#fff3d6;color:#7a4b00}#tA.declenchee{background:var(--err);color:#fff}
+#tA small{color:inherit;opacity:.8}
+.row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:8px;align-items:center;margin:7px 0}
+.row>span{font-size:12.5px;font-weight:600}
+.row .val{font-weight:400;color:var(--mute)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+input[type=text]{width:100%;font:14px Figtree,sans-serif;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:8px;padding:8px 12px;font:600 12.5px Figtree,sans-serif;cursor:pointer;min-height:36px;text-decoration:none;display:inline-flex;align-items:center}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.red{background:var(--err);border-color:var(--err);color:#fff}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.bom{width:100%;border-collapse:collapse;font-size:12px}
+.bom td{padding:4px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.bom td:last-child{text-align:right;color:var(--mute);white-space:nowrap;padding-left:8px}
+.disabled{opacity:.45;pointer-events:none}
+.hide{display:none!important}
+@media(max-width:820px){
+  body{overflow:auto}#app{height:auto}main{grid-template-columns:1fr}#scene{height:62vh}
+  aside{border-left:0;border-top:1px solid var(--line)}#pip{width:190px;height:142px}
+  #caption{width:calc(100% - 24px);bottom:160px;font-size:13.5px}#info{left:12px;right:12px;width:auto;top:auto;bottom:12px}
+}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="../plan/plan.js"></script>
+<script src="../web/maison-bus.js"></script>
+<script src="../web/firmware-emule.js"></script>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>Maquette FabLab<small>carton 1/20 · composants réels</small></h1>
+  <a href="../jumeau-3d/index.html">Jumeau 3D</a><a href="../site-controle/index.html" target="_blank" rel="noopener">Site de contrôle ↗</a>
+  <div class="pills"><span class="pill" id="pBus"><i></i><span>Réseau</span></span><span class="pill" id="pEsp"><i></i><span>ESP32</span></span></div>
+</header>
+<main>
+  <div id="scene">
+    <div id="loading">Chargement de la maquette…</div>
+    <div id="labels"></div>
+    <div id="tools">
+      <div class="bar"><button data-view="ensemble">Établi</button><button data-view="dessus">Dessus</button><button data-view="sejour">Séjour</button><button data-view="entree">Entrée</button><button data-view="technique">Électronique</button><button data-view="pc">PC</button></div>
+      <div class="bar"><label><input type="checkbox" id="cFils" checked> Fils</label><label><input type="checkbox" id="cTags" checked> Étiquettes</label><label><input type="checkbox" id="cToit"> Toit</label><label><input type="checkbox" id="cZones"> Zones</label></div>
+    </div>
+    <div id="pip"><img id="pipImg" class="hide" alt="Flux de la caméra"><div id="pipDet"></div><div class="h"><b>ESP32-CAM</b><span id="pipSrc">vision simulée</span></div></div>
+    <div id="info"><button aria-label="Fermer">×</button><div id="infoBody"></div></div>
+    <div id="caption"></div>
+  </div>
+  <aside>
+    <h2>Mode</h2>
+    <div class="seg" id="segMode"><button data-mode="jumeau">Firmware Wokwi</button><button data-mode="miroir">Maquette réelle</button><button data-mode="local">Hors ligne</button></div>
+    <div class="row" style="margin-top:8px"><span>ID maison</span><input type="text" id="maisonId" spellcheck="false"></div>
+    <p class="note" id="modeNote"></p>
+
+    <h2>État (envoyé par l'ESP32)</h2>
+    <div class="tiles">
+      <div class="tile"><small>DHT22</small><strong id="vT">–</strong></div>
+      <div class="tile"><small>LDR</small><strong id="vL">–</strong></div>
+      <div class="tile"><small>Batterie</small><strong id="vB">–</strong></div>
+      <div class="tile span3" id="tA"><div><small>Alarme</small><strong id="vA">–</strong></div><small id="vP">–</small></div>
+    </div>
+    <div class="btns" style="margin-top:8px"><button class="btn primary" id="bArmer">Armer</button><button class="btn" id="bDesarmer">Désarmer</button><button class="btn red" id="bScenario">▶ Scénario</button></div>
+
+    <div id="monde">
+      <h2>Figurines et environnement</h2>
+      <div class="row"><span>Marie</span><div class="seg" id="segMarie"><button data-p="absent" class="on">Absente</button><button data-p="dehors">Porte</button><button data-p="sejour">Séjour</button><button data-p="chambre">Chambre</button></div></div>
+      <div class="row"><span>Inconnu</span><div class="seg" id="segIntrus"><button data-p="absent" class="on">Absent</button><button data-p="porte">Porte</button><button data-p="fenetre">Fenêtre</button></div></div>
+      <div class="row"><span>Lumière <span class="val" id="oLum"></span></span><input type="range" id="sLum" min="0" max="100" value="70"></div>
+      <div class="row"><span>Temp. ext. <span class="val" id="oText"></span></span><input type="range" id="sText" min="10" max="40" value="31"></div>
+      <div class="btns"><button class="btn" id="bGaz">Approcher un briquet du MQ-2</button></div>
+      <p class="note">À l'atelier, on « fait la nuit » en couvrant la photorésistance avec un doigt : c'est ce que fait le curseur Lumière.</p>
+    </div>
+
+    <h2>Caméra</h2>
+    <div class="seg" id="segCam"><button data-c="scene" class="on">Figurines (simulé)</button><button data-c="webcam">ESP32-CAM réelle</button></div>
+    <div class="row"><span>Flux Python</span><input type="text" id="fluxUrl" value="http://localhost:8081/flux" spellcheck="false"></div>
+
+    <h2>Nomenclature de la maquette</h2>
+    <table class="bom" id="bom"></table>
+    <p class="note">Cliquez sur un composant dans la scène pour voir sa taille réelle, sa broche et son rôle.</p>
+  </aside>
+</main>
+</div>
+<script>
+setTimeout(() => { const l = document.getElementById('loading'); if (l) l.textContent = 'La bibliothèque 3D (Three.js) n\'a pas pu être chargée : une connexion Internet est nécessaire.'; }, 12000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+{
+const PLAN = window.PLAN, $ = id => document.getElementById(id);
+const ECH = 1 / PLAN.echelle_maquette;          // 1 m réel → 5 cm de maquette
+const mm = v => v / 1000;                       // la scène est en mètres
+const HM = PLAN.hauteur_murs * ECH;             // hauteur des murs : 14 cm
+const NOM_ALARME = { desarmee:'Désarmée', armee:'Armée', verification:'Vérification…', declenchee:'ALARME' };
+const NOM_CAUSE = { porte:'porte', presence:'présence', intrus:'visage inconnu', gaz:'gaz', panique:'SOS' };
+
+// ===================== SCÈNE =====================
+const host = $('scene');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+host.prepend(renderer.domElement);
+const tagR = new CSS2DRenderer({ element:$('labels') });
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x2a2622);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.005, 20);
+camera.position.set(0.15, 0.62, 0.95);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0.3, 0.03, 0.24); controls.enableDamping = true; controls.minDistance = 0.08; controls.maxDistance = 3; controls.maxPolarAngle = Math.PI * 0.49;
+const hemi = new THREE.HemisphereLight(0xfff6ea, 0x3b3128, 0.9); scene.add(hemi);
+const lampeAtelier = new THREE.DirectionalLight(0xfff1de, 2.2);
+lampeAtelier.position.set(-0.6, 1.4, 0.9); lampeAtelier.castShadow = true;
+lampeAtelier.shadow.mapSize.set(2048, 2048); lampeAtelier.shadow.bias = -0.0004;
+Object.assign(lampeAtelier.shadow.camera, { left:-0.8, right:0.8, top:0.8, bottom:-0.8, near:0.1, far:4 });
+lampeAtelier.target.position.set(0.3, 0, 0.25); scene.add(lampeAtelier, lampeAtelier.target);
+
+function tex(draw, rep = [1, 1], w = 256, h = 256) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const T = {
+  kraft: tex((g, w, h) => { g.fillStyle = '#c29a6b'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${90 + Math.random() * 60},${60 + Math.random() * 40},30,${Math.random() * 0.12})`; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 6, 1); } }, [2, 2]),
+  cannelure: tex((g, w, h) => { g.fillStyle = '#b98f5e'; g.fillRect(0, 0, w, h); g.strokeStyle = '#7d5a35'; g.lineWidth = 3; g.beginPath(); for (let x = 0; x <= w; x += 2) g.lineTo(x, h / 2 + Math.sin(x / w * Math.PI * 8) * h * 0.32); g.stroke(); g.fillStyle = '#d2ad7e'; g.fillRect(0, 0, w, h * 0.12); g.fillRect(0, h * 0.88, w, h * 0.12); }, [1, 1], 256, 32),
+  bois: tex((g, w, h) => { g.fillStyle = '#b48552'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 2) { g.fillStyle = `rgba(80,45,15,${0.05 + 0.08 * Math.abs(Math.sin(y * 0.11 + Math.sin(y * 0.03) * 3))})`; g.fillRect(0, y, w, 2); } }, [3, 2], 512, 512),
+  plaque: tex((g, w, h) => { g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#c9c4ba'; for (let x = 6; x < w; x += 10) for (let y = 6; y < h; y += 10) if (y < h * 0.12 || y > h * 0.88 || Math.abs(y - h / 2) > 8) g.fillRect(x, y, 3, 3); g.fillStyle = '#d33'; g.fillRect(0, 2, w, 2); g.fillStyle = '#26c'; g.fillRect(0, h * 0.13, w, 2); }, [1, 1], 256, 170),
+  solaire: tex((g, w, h) => { g.fillStyle = '#152446'; g.fillRect(0, 0, w, h); g.strokeStyle = '#a4b4cf'; g.lineWidth = 1.5; for (let i = 0; i <= w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); } for (let j = 0; j <= h; j += 64) { g.beginPath(); g.moveTo(0, j); g.lineTo(w, j); g.stroke(); } }),
+};
+const mat = o => new THREE.MeshStandardMaterial(Object.assign({ roughness:0.8 }, o));
+const M = {
+  kraft: mat({ map:T.kraft, roughness:0.95 }), bois: mat({ map:T.bois, roughness:0.7 }), metal: mat({ color:0xb8bec6, metalness:0.8, roughness:0.3 }),
+  pcbBleu: mat({ color:0x1d4f91, roughness:0.45 }), pcbNoir: mat({ color:0x141619, roughness:0.45 }), pcbViolet: mat({ color:0x5b2a86, roughness:0.45 }), pcbVert: mat({ color:0x1f6b3a, roughness:0.45 }),
+  or: mat({ color:0xd4a72c, metalness:0.9, roughness:0.25 }), noir: mat({ color:0x1a1a1a, roughness:0.5 }), blanc: mat({ color:0xf3f3f0, roughness:0.5 }),
+  plexi: new THREE.MeshStandardMaterial({ color:0xdfefff, transparent:true, opacity:0.25, roughness:0.05, depthWrite:false }),
+  scotch: new THREE.MeshStandardMaterial({ color:0xe8dcae, transparent:true, opacity:0.55, roughness:0.3 }),
+  colle: new THREE.MeshStandardMaterial({ color:0xf6f3e8, transparent:true, opacity:0.75, roughness:0.15 }),
+  pique: mat({ color:0xd8b98a, roughness:0.7 }), vert18650: mat({ color:0x2e9e5b, roughness:0.35 }), gris: mat({ color:0x4a4f55, roughness:0.6 }),
+  plaque: mat({ map:T.plaque, roughness:0.6 }), solaire: mat({ map:T.solaire, roughness:0.2, metalness:0.4 }),
+};
+function box(w, h, d, m, x, y, z, parent = scene, ombre = true) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = ombre; o.receiveShadow = true; parent.add(o); return o;
+}
+function cyl(r, h, m, parent, seg = 18) { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), m); o.castShadow = true; parent.add(o); return o; }
+const tags = [];
+function etiquette(txt, x, y, z, cls = 'tag', parent = scene) { const el = document.createElement('div'); el.className = cls; el.innerHTML = txt; const o = new CSS2DObject(el); o.position.set(x, y, z); parent.add(o); tags.push(o); return o; }
+
+// ===================== ATELIER =====================
+box(1.5, 0.04, 1.0, M.bois, 0.3, -0.02, 0.3);                                   // plateau de l'établi
+for (const [x, z] of [[-0.4, -0.15], [1.0, -0.15], [-0.4, 0.75], [1.0, 0.75]]) box(0.05, 0.85, 0.05, M.bois, x, -0.465, z);
+const sol = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), mat({ color:0x6c665f, roughness:0.95 })); sol.rotation.x = -Math.PI / 2; sol.position.y = -0.89; sol.receiveShadow = true; scene.add(sol);
+const mur = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), mat({ color:0xd9d2c6 })); mur.position.set(0.3, 0.6, -0.6); scene.add(mur);
+box(1.2, 0.6, 0.01, mat({ color:0xa58a62 }), 0.3, 0.45, -0.59);                     // panneau perforé
+for (let i = 0; i < 14; i++) for (let j = 0; j < 6; j++) box(0.006, 0.006, 0.002, M.noir, -0.25 + i * 0.08, 0.2 + j * 0.09, -0.584, scene, false);
+// Petits outils sur l'établi : cutter, réglet, pistolet à colle
+box(0.3, 0.002, 0.03, M.metal, -0.15, 0.001, 0.6, scene, false);
+box(0.12, 0.012, 0.018, mat({ color:0xffcc00 }), 0.75, 0.006, 0.62); box(0.04, 0.003, 0.012, M.metal, 0.83, 0.004, 0.62);
+{ const p = new THREE.Group(); p.position.set(-0.2, 0.01, 0.15); p.rotation.y = 0.6; scene.add(p); box(0.13, 0.03, 0.035, mat({ color:0x2f6fbf }), 0, 0.03, 0, p); box(0.035, 0.07, 0.03, mat({ color:0x2f6fbf }), -0.035, -0.005, 0, p); cyl(0.004, 0.05, M.metal, p).rotation.z = Math.PI / 2; p.children[p.children.length - 1].position.set(0.085, 0.03, 0); cyl(0.004, 0.12, M.colle, p).rotation.z = Math.PI / 2; p.children[p.children.length - 1].position.set(-0.12, 0.03, 0); }
+
+// ===================== MAQUETTE EN CARTON (même plan que le jumeau 3D) =====================
+const maq = new THREE.Group(); scene.add(maq);
+const [PW, PD] = PLAN.emprise;
+box(PW * ECH + 0.02, 0.005, PD * ECH + 0.02, M.kraft, PW * ECH / 2, 0.0025, PD * ECH / 2, maq);   // plaque de base (carton 5 mm)
+box(0.36, 0.005, 0.17, M.kraft, 0.175, 0.0025, PD * ECH + 0.095, maq);                               // terrasse
+const Y0 = 0.005;
+function murCarton(len, ep, horiz, x, z, y0, h) {
+  const top = T.cannelure.clone(); top.needsUpdate = true; top.repeat.set(Math.max(1, len / 0.03), 1);
+  const bout = T.cannelure.clone(); bout.needsUpdate = true;
+  const mTop = new THREE.MeshStandardMaterial({ map:top, roughness:0.95 }), mBout = new THREE.MeshStandardMaterial({ map:bout, roughness:0.95 });
+  const mats = horiz ? [mBout, mBout, mTop, M.kraft, M.kraft, M.kraft] : [M.kraft, M.kraft, mTop, M.kraft, mBout, mBout];
+  if (!horiz) { mTop.map.center.set(0.5, 0.5); mTop.map.rotation = Math.PI / 2; }
+  const o = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : ep, h, horiz ? ep : len), mats);
+  o.position.set(x, y0 + h / 2, z); o.castShadow = o.receiveShadow = true; maq.add(o); return o;
+}
+for (const m of PLAN.murs) {
+  const [x1, z1] = m.de.map(v => v * ECH), [x2, z2] = m.a.map(v => v * ECH), horiz = z1 === z2, L = horiz ? x2 - x1 : z2 - z1;
+  const ep = m.ext ? 0.006 : 0.004;
+  const piece = (a, b, y0, y1) => { if (b - a < 0.0005 || y1 - y0 < 0.0005) return; const mid = (a + b) / 2; murCarton(b - a, ep, horiz, horiz ? x1 + mid : x1, horiz ? z1 : z1 + mid, Y0 + y0, y1 - y0); };
+  let cur = 0;
+  for (const o of [...m.ouvertures].sort((p, q) => p.a - q.a)) {
+    const a = o.a * ECH, b = o.b * ECH, y0 = o.y0 * ECH, y1 = o.y1 * ECH;
+    piece(cur, a, 0, HM); piece(a, b, 0, y0); piece(a, b, y1, HM);
+    if (o.type === 'fenetre' || o.type === 'baie') {   // feuille de plexiglas/acétate scotchée
+      const len = b - a, mid = (a + b) / 2, h = y1 - y0;
+      horiz ? box(len + 0.006, h + 0.006, 0.001, M.plexi, x1 + mid, Y0 + y0 + h / 2, z1 + ep / 2 + 0.0006, maq, false) : box(0.001, h + 0.006, len + 0.006, M.plexi, x1 + ep / 2 + 0.0006, Y0 + y0 + h / 2, z1 + mid, maq, false);
+    }
+    cur = b;
+  }
+  piece(cur, L, 0, HM);
+}
+// Bandes de scotch de papier aux angles
+for (const [x, z, r] of [[0, 0, 0.78], [0.6, 0, -0.78], [0, 0.45, -0.78], [0.6, 0.45, 0.78], [0.35, 0.175, 0], [0.25, 0.175, 0]]) {
+  const s = box(0.025, 0.02, 0.0005, M.scotch, x, Y0 + HM - 0.012, z, maq, false); s.rotation.y = r;
+}
+// Noms des pièces écrits au feutre sur le carton du sol
+function texte(txt, x, z, taille = 0.02, rot = 0) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128; const g = c.getContext('2d');
+  const dessiner = () => { g.clearRect(0, 0, 512, 128); g.fillStyle = '#3a3a42'; g.font = '600 78px Caveat, cursive'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 64); t.needsUpdate = true; };
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(taille * 4, taille), new THREE.MeshBasicMaterial({ map:t, transparent:true, depthWrite:false }));
+  p.rotation.x = -Math.PI / 2; p.rotation.z = rot; p.position.set(x, Y0 + 0.0004, z); maq.add(p);
+  dessiner(); document.fonts?.load('600 78px Caveat').then(dessiner).catch(() => {});
+}
+for (const p of PLAN.pieces) texte(p.nom.replace(' (PC vision)', ''), (p.x0 + p.x1) / 2 * ECH, (p.z0 + p.z1) / 2 * ECH + 0.02, p.id === 'couloir' ? 0.012 : 0.016);
+texte('Terrasse', 0.175, 0.53, 0.016); texte('échelle 1/20', 0.53, 0.53, 0.012);
+// Porte d'entrée en carton sur charnière de scotch
+const porte = new THREE.Group(); porte.position.set(7.75 * ECH, Y0, 9 * ECH + 0.003); maq.add(porte);
+box(1.0 * ECH, 2.2 * ECH, 0.003, M.kraft, 0.5 * ECH, 1.1 * ECH, 0, porte);
+box(0.004, 0.004, 0.006, M.metal, 0.9 * ECH, 1.05 * ECH, 0.004, porte);
+const aimant = box(0.012, 0.006, 0.004, M.gris, 0.86 * ECH, 2.0 * ECH, 0.004, porte);
+// Toit amovible (une feuille de carton)
+const toit = new THREE.Group(); maq.add(toit);
+box(PW * ECH + 0.03, 0.005, PD * ECH + 0.03, M.kraft, PW * ECH / 2, Y0 + HM + 0.0025, PD * ECH / 2, toit); toit.visible = false;
+
+// ===================== COMPOSANTS RÉELS (taille réelle, en mm) =====================
+const D = {}, cliquables = [], zones = [];
+const DIM = {}; // dimensions réelles affichées dans les fiches
+function led(parent, x, y, z, couleur, r = 0.0025, h = 0.0045) {
+  const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+  const m = new THREE.MeshStandardMaterial({ color:couleur, emissive:couleur, emissiveIntensity:0.15, transparent:true, opacity:0.9, roughness:0.2 });
+  const corps = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), m); corps.position.y = h / 2; g.add(corps);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), m); dome.position.y = h; g.add(dome);
+  return { g, m };
+}
+function pins(parent, n, x0, y, z, pas = mm(2.54), haut = mm(6)) { for (let i = 0; i < n; i++) box(mm(0.64), haut, mm(0.64), M.or, x0 + i * pas, y, z, parent, false); }
+function zone(r, l, c) { const k = new THREE.Mesh(new THREE.ConeGeometry(r, l, 30, 1, true), new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:0.05, side:THREE.DoubleSide, depthWrite:false })); k.rotation.x = -Math.PI / 2; k.position.z = l / 2; k.userData.zone = true; return k; }
+// Chaque modèle : face avant vers +z, origine au point de fixation
+const MOD = {
+  esp32(g) { DIM.esp32 = '55 × 28 mm, sur demi-plaque d\'essai';
+    box(mm(83), mm(9.5), mm(55), M.plaque, 0, mm(4.75), 0, g);
+    const c = new THREE.Group(); c.position.y = mm(12); g.add(c);
+    box(mm(54), mm(1.6), mm(28), M.pcbNoir, 0, mm(4), 0, c);
+    box(mm(18), mm(3), mm(25.5), M.metal, mm(14), mm(6.3), 0, c); box(mm(6), mm(1), mm(18), M.pcbNoir, mm(25), mm(5.1), 0, c);
+    box(mm(8), mm(3), mm(7.5), M.metal, mm(-27), mm(6), 0, c);
+    for (const z of [-12.7, 12.7]) for (let i = 0; i < 19; i++) box(mm(0.64), mm(8), mm(0.64), M.or, mm(-23 + i * 2.54), mm(0), mm(z), c, false);
+    D.ledEsp = led(c, mm(-18), mm(4.8), mm(5), 0x2f8fff, mm(0.8), mm(0.6)); D.ledPow = led(c, mm(-18), mm(4.8), mm(-5), 0xff3030, mm(0.8), mm(0.6));
+    box(mm(3), mm(1.5), mm(5), M.noir, mm(-14), mm(5.3), mm(-9), c); box(mm(3), mm(1.5), mm(5), M.noir, mm(-14), mm(5.3), mm(9), c);
+  },
+  ld2410(g, o) { DIM[o.id] = '22 × 16 mm (HLK-LD2410C)';
+    box(mm(22), mm(16), mm(1.2), M.pcbBleu, 0, 0, mm(1), g);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) box(mm(4.5), mm(3.5), mm(0.3), M.or, mm(-5 + i * 6), mm(3 - j * 6), mm(1.7), g, false);
+    box(mm(6), mm(6), mm(1), M.noir, mm(6), 0, mm(1.9), g); pins(g, 5, mm(-5), mm(-9), mm(1), mm(2.54), mm(4));
+    D['led_' + o.id] = led(g, mm(8), mm(6), mm(1.6), 0x3aa0ff, mm(0.7), mm(0.5));
+    const p = new THREE.Group(); p.rotation.x = 0.4; const z = zone(0.11, 0.2, 0x3aa0ff); p.add(z); g.add(p); D['zone_' + o.id] = z; zones.push(p);
+  },
+  dht22(g) { DIM.dht22 = '15 × 25 × 7,7 mm';
+    box(mm(15.1), mm(25), mm(7.7), M.blanc, 0, 0, mm(3.9), g);
+    for (let i = 0; i < 7; i++) box(mm(11), mm(1.2), mm(0.4), M.noir, 0, mm(8 - i * 2.6), mm(7.9), g, false);
+    pins(g, 4, mm(-3.8), mm(-15), mm(3.9), mm(2.54), mm(6));
+  },
+  ldr(g) { DIM.ldr = 'module 32 × 14 mm';
+    box(mm(32), mm(14), mm(1.6), M.pcbBleu, 0, 0, mm(0.8), g);
+    const t = cyl(mm(2.5), mm(2), mat({ color:0xd9772b }), g); t.rotation.x = Math.PI / 2; t.position.set(mm(11), 0, mm(3));
+    box(mm(6), mm(6), mm(4), M.pcbBleu, mm(-2), 0, mm(3.5), g); cyl(mm(1.5), mm(1), M.metal, g).position.set(mm(-2), 0, mm(5.6));
+    D.ledLdr = led(g, mm(4), mm(4.5), mm(1.6), 0x33ff66, mm(0.7), mm(0.5));
+  },
+  mq2(g) { DIM.mq2 = 'module 32 × 22 mm, capot Ø 18 mm';
+    box(mm(32), mm(22), mm(1.6), M.pcbBleu, 0, 0, mm(0.8), g);
+    const capot = cyl(mm(9), mm(10), M.metal, g); capot.rotation.x = Math.PI / 2; capot.position.z = mm(8);
+    const base = cyl(mm(10), mm(3), M.noir, g); base.rotation.x = Math.PI / 2; base.position.z = mm(3);
+    D.ledGaz = led(g, mm(12), mm(8), mm(1.6), 0xff3b30, mm(0.7), mm(0.5));
+    D.gaz = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), new THREE.MeshBasicMaterial({ color:0x9bd46b, transparent:true, opacity:0, depthWrite:false })); D.gaz.position.z = 0.04; g.add(D.gaz);
+  },
+  ils(g) { DIM.ils_porte = 'contact 27 × 14 mm + aimant';
+    box(mm(27), mm(6), mm(4), M.blanc, 0, 0, mm(2), g);
+  },
+  camera(g) { DIM.camera = 'ESP32-CAM 27 × 40 mm, capteur OV2640';
+    const c = new THREE.Group(); c.rotation.x = 0.35; g.add(c); D.camCorps = c;
+    box(mm(27), mm(40), mm(1.6), M.pcbNoir, 0, 0, mm(2), c);
+    box(mm(8), mm(8), mm(4), M.noir, 0, mm(8), mm(4.5), c);
+    const l = cyl(mm(3.5), mm(4), M.noir, c); l.rotation.x = Math.PI / 2; l.position.set(0, mm(8), mm(8));
+    const v = new THREE.Mesh(new THREE.SphereGeometry(mm(2.4), 12, 8), mat({ color:0x223355, metalness:0.6, roughness:0.05 })); v.position.set(0, mm(8), mm(10)); c.add(v);
+    box(mm(14), mm(10), mm(1), M.metal, 0, mm(-9), mm(3.2), c);
+    D.flash = led(c, mm(9), mm(-14), mm(2.8), 0xffffff, mm(1.4), mm(0.8));
+    const z = zone(0.12, 0.26, 0xffffff); c.add(z); D.zoneCam = z; zones.push(z);
+  },
+  pc(g) { DIM.pc_vision = 'PC portable avec Python + OpenCV';
+    box(0.32, 0.018, 0.22, M.gris, 0, 0.009, 0, g);
+    box(0.28, 0.002, 0.1, M.noir, 0, 0.019, -0.03, g);
+    const ec = new THREE.Group(); ec.position.set(0, 0.018, -0.11); ec.rotation.x = -0.28; g.add(ec);
+    box(0.32, 0.21, 0.008, M.gris, 0, 0.105, 0, ec);
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.19), new THREE.MeshBasicMaterial({ color:0xffffff })); s.position.set(0, 0.105, 0.0042); ec.add(s); D.ecranPC = s;
+  },
+  lampe(g, o) { DIM[o.id] = 'LED blanc chaud 5 mm + résistance 220 Ω';
+    box(mm(14), mm(4), mm(14), M.kraft, 0, mm(2), 0, g);
+    const l = led(g, 0, 0, 0, 0xffd28a, mm(2.5), mm(4.5)); l.g.rotation.x = Math.PI;
+    const p = new THREE.PointLight(0xffc98a, 0, 0.35, 2); p.position.y = -0.012; g.add(p);
+    D['lampe_' + o.id] = { m:l.m, p, v:0 };
+  },
+  ventilateur(g) { DIM.ventilateur = 'ventilateur 5 V, 40 × 40 × 10 mm';
+    const cadre = new THREE.Shape(); cadre.moveTo(-0.02, -0.02); cadre.lineTo(0.02, -0.02); cadre.lineTo(0.02, 0.02); cadre.lineTo(-0.02, 0.02);
+    const trou = new THREE.Path(); trou.absarc(0, 0, mm(19), 0, Math.PI * 2, true); cadre.holes.push(trou);
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(cadre, { depth:mm(10), bevelEnabled:false }), M.noir); m.castShadow = true; g.add(m);
+    const h = new THREE.Group(); h.position.z = mm(5); g.add(h);
+    const moyeu = cyl(mm(7), mm(6), M.noir, h); moyeu.rotation.x = Math.PI / 2;
+    for (let i = 0; i < 7; i++) { const p = new THREE.Group(); p.rotation.z = i / 7 * Math.PI * 2; const pale = box(mm(11), mm(6), mm(1), M.noir, mm(12), 0, 0, p); pale.rotation.x = 0.5; h.add(p); }
+    D.helice = h; D.vitesse = 0;
+  },
+  chauffage(g) { DIM.chauffage = 'LED rouge 5 mm (simule le chauffage)';
+    box(mm(30), mm(18), mm(2), M.kraft, 0, 0, mm(1), g);
+    for (let i = 0; i < 6; i++) box(mm(2), mm(16), mm(1.5), M.kraft, mm(-12 + i * 5), 0, mm(2.5), g);
+    const l = led(g, 0, mm(13), mm(2), 0xff2a1a); D.ledChauffe = l;
+    const p = new THREE.PointLight(0xff3a1c, 0, 0.12, 2); p.position.set(0, mm(14), mm(10)); g.add(p); D.lumChauffe = p;
+  },
+  relais(g) { DIM.relais = 'module relais 5 V, 50 × 26 mm';
+    for (const [x, z] of [[-21, -9], [21, -9], [-21, 9], [21, 9]]) cyl(mm(1.5), mm(5), M.metal, g).position.set(mm(x), mm(2.5), mm(z));
+    box(mm(50), mm(1.6), mm(26), M.pcbBleu, 0, mm(5.8), 0, g);
+    box(mm(19), mm(15.5), mm(15), M.pcbBleu, mm(-2), mm(14.3), 0, g);
+    box(mm(10), mm(10), mm(15), M.pcbVert, mm(19), mm(11.6), 0, g);
+    D.ledRelais = led(g, mm(-20), mm(6.6), mm(8), 0xff2020, mm(1), mm(0.8)); pins(g, 3, mm(-23), mm(9), mm(-6), mm(2.54), mm(6));
+  },
+  sirene(g) { DIM.sirene = 'buzzer Ø 12 mm + LED rouge (gyrophare)';
+    box(mm(30), mm(22), mm(2), M.kraft, 0, 0, mm(1), g);
+    const b = cyl(mm(6), mm(9), M.noir, g); b.rotation.x = Math.PI / 2; b.position.set(mm(-6), 0, mm(6.5));
+    const l = led(g, mm(8), mm(-3), mm(2), 0xff2020, mm(2.5)); l.g.rotation.x = Math.PI / 2; D.gyro = l;
+    const p = new THREE.PointLight(0xff2020, 0, 0.5, 2); p.position.z = 0.03; g.add(p); D.lumGyro = p;
+  },
+  oled(g) { DIM.oled = 'écran OLED 0,96", 27 × 27 mm';
+    box(mm(27), mm(27), mm(1.6), M.pcbBleu, 0, 0, mm(0.8), g);
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(mm(22), mm(11)), new THREE.MeshBasicMaterial({ map:t })); s.position.set(0, mm(-1), mm(1.7)); g.add(s); D.oled = { c, t };
+    box(mm(24), mm(16), mm(0.6), M.noir, 0, mm(-1), mm(1.85), g).position.z = mm(1.6);
+    pins(g, 4, mm(-3.8), mm(13), mm(0.8), mm(2.54), mm(5));
+  },
+  bouton(g) { DIM.bouton = 'bouton poussoir 12 × 12 mm';
+    box(mm(12), mm(12), mm(4), M.noir, 0, 0, mm(2), g);
+    const cap = cyl(mm(4.5), mm(3), mat({ color:0xd62828 }), g); cap.rotation.x = Math.PI / 2; cap.position.z = mm(5);
+    D.ledArmee = led(g, 0, mm(10), mm(1), 0xff9f1c, mm(2), mm(3));
+  },
+  solaire(g) { DIM.panneau_solaire = 'panneau 6 V, 110 × 60 mm, sur piques en bois';
+    for (const [x, z] of [[-0.07, -0.05], [0.07, -0.05], [-0.07, 0.05], [0.07, 0.05]]) cyl(mm(1.5), z < 0 ? 0.12 : 0.1, M.pique, g).position.set(x, z < 0 ? 0.06 : 0.05, z);
+    const p = box(mm(110), mm(3), mm(60), M.solaire, 0, 0.112, 0, g); p.rotation.x = -0.2;
+  },
+  batterie(g) { DIM.batterie = 'support 18650 (77 × 21 mm) + TP4056 + INA219';
+    box(mm(77), mm(10), mm(21), M.noir, 0, mm(5), 0, g);
+    const c = cyl(mm(9), mm(65), M.vert18650, g); c.rotation.z = Math.PI / 2; c.position.y = mm(12);
+    const tp = new THREE.Group(); tp.position.set(mm(-10), 0, mm(-30)); g.add(tp); box(mm(26), mm(1.6), mm(17), M.pcbBleu, 0, mm(0.8), 0, tp); box(mm(8), mm(3), mm(7), M.metal, mm(-10), mm(3), 0, tp);
+    const ina = new THREE.Group(); ina.position.set(mm(25), 0, mm(-30)); g.add(ina); box(mm(25), mm(1.6), mm(22), M.pcbViolet, 0, mm(0.8), 0, ina); box(mm(8), mm(6), mm(10), mat({ color:0x2a7de1 }), mm(-6), mm(4), 0, ina);
+    D.ledCharge = led(tp, mm(6), mm(1.6), mm(4), 0xff3030, mm(0.8), mm(0.6));
+  },
+};
+// Positions dans la maquette (mm). Les composants muraux sont collés au pistolet à colle.
+const POS = {
+  esp32:        { p:[545, 0, 330], r:90 },
+  relais:       { p:[560, 0, 420], r:0 },
+  batterie:     { p:[525, 0, 268], r:0 },
+  radar_salon:  { p:[130, 115, 177], r:0 },
+  radar_chambre:{ p:[3, 115, 140], r:90 },
+  ldr:          { p:[585, 112, 453], r:0 },
+  dht22:        { p:[348, 72, 345], r:-90 },
+  mq2:          { p:[60, 100, 177], r:0 },
+  ils_porte:    { p:[425, 100, 446], r:180 },
+  camera:       { p:[412, 128, 453], r:0 },
+  lampe_salon:  { p:[175, 140, 300], r:0 },
+  lampe_chambre:{ p:[125, 140, 90], r:0 },
+  ventilateur:  { p:[346, 85, 410], r:-90 },
+  chauffage:    { p:[3, 40, 215], r:90 },
+  sirene:       { p:[497, 122, 453], r:0 },
+  oled:         { p:[473, 85, 330], r:-90 },
+  bouton:       { p:[473, 55, 330], r:-90 },
+  panneau_solaire:{ p:[175, 0, 525], r:0 },
+  pc_vision:    { p:[860, 0, 280], r:-60 },
+};
+// Poutres en carton qui portent les LED d'éclairage
+box(0.35, 0.006, 0.012, M.kraft, 0.175, Y0 + mm(143), 0.3, maq); box(0.012, 0.006, 0.175, M.kraft, 0.125, Y0 + mm(143), 0.0875, maq);
+const COUL = { capteur:'#1f77b4', actionneur:'#e8590c', controleur:'#2b8a3e', energie:'#c92a2a', vision:'#7048e8' };
+const OBJ = Object.fromEntries(PLAN.objets.map(o => [o.id, o]));
+const TAGS = {};
+for (const o of PLAN.objets) {
+  const pos = POS[o.id]; if (!pos) continue;
+  const g = new THREE.Group(); g.position.set(mm(pos.p[0]), Y0 + mm(pos.p[1]), mm(pos.p[2])); g.rotation.y = pos.r * Math.PI / 180;
+  (o.id === 'pc_vision' ? scene : maq).add(g);
+  (MOD[o.type] || (() => {}))(g, o);
+  if (!['esp32', 'relais', 'batterie', 'solaire', 'pc', 'lampe'].includes(o.type)) {
+    const colle = new THREE.Mesh(new THREE.SphereGeometry(mm(3), 10, 8), M.colle); colle.scale.set(1, 0.5, 0.6); colle.position.set(0, mm(-6), mm(0.5)); g.add(colle);
+  }
+  g.traverse(m => { if (m.isMesh && !m.userData.zone) { m.userData.objet = o; cliquables.push(m); } });
+  const court = { esp32:'ESP32', radar_salon:'Radar LD2410', radar_chambre:'Radar LD2410', ldr:'LDR', dht22:'DHT22', mq2:'MQ-2', ils_porte:'ILS', camera:'ESP32-CAM', pc_vision:'PC · OpenCV', lampe_salon:'LED séjour', lampe_chambre:'LED chambre', ventilateur:'Ventilateur', chauffage:'LED chauffage', relais:'Relais', sirene:'Buzzer', oled:'OLED', bouton:'Bouton', panneau_solaire:'Panneau 6 V', batterie:'18650 + TP4056' }[o.id];
+  const haut = { esp32:0.03, batterie:0.03, relais:0.03, panneau_solaire:0.14, pc_vision:0.25, lampe:-0.008 }[o.id] ?? (o.type === 'lampe' ? 0.012 : 0.022);
+  const t = etiquette(`${court}<b></b>`, 0, haut, 0, 'tag', g); t.element.style.setProperty('--c', COUL[o.categorie]); TAGS[o.id] = t.element.querySelector('b');
+}
+aimant.userData.objet = OBJ.ils_porte; cliquables.push(aimant);
+
+// ===================== FILS DUPONT =====================
+const fils = new THREE.Group(); maq.add(fils); const filsPC = new THREE.Group(); scene.add(filsPC);
+const ESPB = [mm(545), Y0 + mm(14), mm(330)];
+const COUL_SIG = { radar_salon:0xffd43b, radar_chambre:0xffd43b, ldr:0x37b24d, dht22:0xff922b, mq2:0x37b24d, ils_porte:0x4dabf7, camera:0, lampe_salon:0xffffff, lampe_chambre:0xffffff, ventilateur:0x9775fa, chauffage:0xff8787, relais:0x9775fa, sirene:0xcc5de8, oled:0x4dabf7, bouton:0x4dabf7, batterie:0xff6b6b };
+const geoImp = new THREE.SphereGeometry(mm(2.2), 8, 6); const impulsions = [];
+const chemins = {};
+function fil(points, couleur, rayon = mm(0.7), groupe = fils) {
+  const c = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), false, 'centripetal');
+  const m = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(24, points.length * 18), rayon, 6, false), new THREE.MeshStandardMaterial({ color:couleur, roughness:0.55 }));
+  m.castShadow = true; groupe.add(m); return c;
+}
+for (const o of PLAN.objets) {
+  if (!POS[o.id] || ['esp32', 'pc_vision', 'camera', 'panneau_solaire'].includes(o.id)) continue;
+  const [x, y, z] = POS[o.id].p.map(mm), yb = Y0 + mm(1.5);
+  // descend le long du mur, longe le couloir au sol jusqu'à la plaque d'essai
+  const route = [[x, Y0 + y, z], [x, yb, z], [x, yb, mm(212)], [mm(520), yb, mm(212)], [mm(520), yb, ESPB[2] - mm(20)], [ESPB[0] - mm(30), ESPB[1], ESPB[2]]];
+  if (o.id === 'relais' || o.id === 'batterie') route.splice(1, 4, [x, yb + mm(8), (z + ESPB[2]) / 2]);
+  if (['lampe_salon', 'lampe_chambre'].includes(o.id)) route.splice(1, 0, [x, Y0 + mm(143), z]);
+  const dec = [[0, 0, 0], [mm(1.6), 0, mm(1.6)], [-mm(1.6), 0, -mm(1.6)]];
+  const coul = [COUL_SIG[o.id] ?? 0xffd43b, 0xd32f2f, 0x222222];
+  dec.forEach((d, i) => { const c = fil(route.map((p, k) => k === 0 ? p : [p[0] + d[0], p[1], p[2] + d[2]]), coul[i]); if (i === 0) chemins[o.id] = { c, sens:o.categorie === 'actionneur' ? -1 : 1 }; });
+}
+{ // câble USB de l'ESP32 vers le PC, câble du panneau solaire, alimentation de l'ESP32-CAM par batterie USB
+  const P = POS.pc_vision.p.map(mm);
+  chemins.usb = { c:fil([[ESPB[0] + mm(30), ESPB[1], ESPB[2]], [mm(600), Y0 + mm(6), mm(330)], [mm(640), mm(2), mm(320)], [P[0] - 0.12, mm(2), P[2] + 0.02], [P[0] - 0.13, mm(10), P[2] + 0.01]], 0x333333, mm(1.6), filsPC), sens:1 };
+  const S = POS.panneau_solaire.p.map(mm), B = POS.batterie.p.map(mm);
+  chemins.panneau_solaire = { c:fil([[S[0] + 0.05, 0.1, S[2] - 0.03], [S[0] + 0.07, mm(3), S[2] - 0.05], [mm(470), Y0 + mm(2), mm(470)], [mm(470), Y0 + mm(2), B[2]], [B[0] - mm(38), Y0 + mm(5), B[2]]], 0xd32f2f, mm(0.9)), sens:1 };
+  const C = POS.camera.p.map(mm);
+  box(0.09, 0.022, 0.06, mat({ color:0xeeeeee }), mm(412), 0.011, mm(520), scene);
+  chemins.camera = { c:fil([[C[0], Y0 + C[1] - mm(20), C[2] + mm(3)], [C[0] + mm(8), Y0 + mm(40), C[2] + mm(8)], [C[0], mm(3), mm(495)], [mm(412), mm(12), mm(490)]], 0x222222, mm(1.2)), sens:-1 };
+}
+function impulsion(id, n = 1) { const ch = chemins[id]; if (!ch) return; for (let i = 0; i < n; i++) { const grp = id === 'usb' ? filsPC : fils, m = new THREE.Mesh(geoImp, new THREE.MeshBasicMaterial({ color:0xfff3b0 })); grp.add(m); impulsions.push({ m, ch, grp, u:-i * 0.15 }); } }
+function majImpulsions(dt) {
+  for (const p of impulsions) { p.u += dt * 0.8; const u = Math.min(1, Math.max(0, p.u)); p.m.visible = p.u >= 0; p.m.position.copy(p.ch.c.getPointAt(p.ch.sens > 0 ? u : 1 - u)); }
+  for (const p of impulsions.filter(p => p.u >= 1)) p.grp.remove(p.m);
+  impulsions.splice(0, impulsions.length, ...impulsions.filter(p => p.u < 1));
+}
+
+// ===================== FIGURINES =====================
+const N = { D:[8.25, 12.6], P:[8.25, 9.0], E:[8.25, 6.9], S:[6.2, 5.9], L:[4.7, 6.4], C:[4.2, 4.2], B:[2.4, 2.1], J:[3.0, 13.2], V:[3.4, 8.6] };
+const A = [['D', 'P'], ['P', 'E'], ['E', 'S'], ['S', 'L'], ['L', 'C'], ['C', 'B'], ['J', 'V'], ['V', 'L'], ['D', 'J']];
+function chemin(de, vers, interdit) { const prec = { [de]:null }, f = [de]; while (f.length) { const n = f.shift(); if (n === vers) break; for (const [a, b] of A) { if (interdit.includes(a + b) || interdit.includes(b + a)) continue; const m = a === n ? b : b === n ? a : null; if (m && !(m in prec)) { prec[m] = n; f.push(m); } } } const o = []; for (let n = vers; n; n = prec[n]) o.unshift(n); return o; }
+function figurine(couleur, nom, connu) {
+  const g = new THREE.Group(); scene.add(g); g.visible = false;
+  const pied = cyl(mm(9), mm(2), M.kraft, g); pied.position.y = mm(1);
+  const forme = new THREE.Shape(); forme.moveTo(-0.0075, 0); forme.lineTo(0.0075, 0); forme.lineTo(0.009, 0.055); forme.lineTo(0.004, 0.065); forme.lineTo(-0.004, 0.065); forme.lineTo(-0.009, 0.055);
+  const corps = new THREE.Mesh(new THREE.ExtrudeGeometry(forme, { depth:mm(1.5), bevelEnabled:false }), mat({ color:couleur })); corps.position.set(0, mm(2), -mm(0.75)); corps.castShadow = true; g.add(corps);
+  const tete = new THREE.Mesh(new THREE.CylinderGeometry(mm(7), mm(7), mm(1.5), 20), mat({ color:connu ? 0xe0b48f : 0x2b2b2b })); tete.rotation.x = Math.PI / 2; tete.position.y = mm(75); tete.castShadow = true; g.add(tete);
+  const el = document.createElement('div'); el.className = 'tag fig'; el.textContent = nom; const t = new CSS2DObject(el); t.position.y = 0.1; g.add(t);
+  return { g, connu, chemin:[], noeud:null, vu:0, signale:false, absent:0 };
+}
+const marie = figurine(0x2a9d8f, 'Marie', true), intrus = figurine(0x2b2b2b, 'Inconnu', false);
+const LM = { absent:null, dehors:'D', sejour:'L', chambre:'B' }, LI = { absent:null, porte:'E', fenetre:'L' };
+function deplacer(p, cible, depart, interdit) {
+  if (cible === null) { p.g.visible = false; p.noeud = null; p.chemin = []; return; }
+  if (!p.g.visible) { p.noeud = depart; p.g.position.set(N[depart][0] * ECH, Y0, N[depart][1] * ECH); p.g.visible = true; }
+  p.chemin = chemin(p.noeud, cible, interdit); if (p.chemin[0] === p.noeud) p.chemin.shift();
+}
+function bougerMarie(l) { deplacer(marie, LM[l], 'D', ['VL', 'JV']); sel('segMarie', 'p', l); }
+function bougerIntrus(l) { deplacer(intrus, LI[l], l === 'fenetre' ? 'J' : 'D', l === 'fenetre' ? ['DJ', 'PE'] : ['JV', 'VL']); sel('segIntrus', 'p', l); }
+function marcher(p, dt) {
+  if (!p.g.visible || !p.chemin.length) return;
+  const tx = N[p.chemin[0]][0] * ECH, tz = N[p.chemin[0]][1] * ECH, dx = tx - p.g.position.x, dz = tz - p.g.position.z, d = Math.hypot(dx, dz), pas = 1.6 * ECH * dt;
+  if (d <= pas) { p.g.position.x = tx; p.g.position.z = tz; p.noeud = p.chemin.shift(); } else { p.g.position.x += dx / d * pas; p.g.position.z += dz / d * pas; p.g.rotation.y = Math.atan2(dx, dz); }
+}
+const dans = (p, x0, z0, x1, z1) => p.g.visible && p.g.position.x > x0 * ECH && p.g.position.x < x1 * ECH && p.g.position.z > z0 * ECH && p.g.position.z < z1 * ECH;
+
+// ===================== MONDE SIMULÉ =====================
+const monde = { lum:70, text:31, t:27, batterie:80, gaz:0, fuite:false, solaire:0, porte:false };
+function majMonde(dt, e) {
+  monde.solaire = 6 * monde.lum / 100;
+  monde.t += ((monde.text - monde.t) * 0.02 + (e?.clim?.ventilo ? -0.25 : 0) + (e?.clim?.chauffage ? 0.25 : 0)) * dt;
+  monde.batterie = Math.min(100, Math.max(0, monde.batterie + (monde.solaire - (e?.energie?.conso_w ?? 0.8)) / 10 * 100 / 3600 * 30 * dt));
+  monde.gaz = monde.fuite ? Math.min(85, monde.gaz + 12 * dt) : Math.max(0, monde.gaz - 15 * dt);
+  monde.porte = [marie, intrus].some(p => dans(p, 7.4, 8.1, 9.1, 10.3));
+}
+const capteurs = () => ({ pres_salon:+[marie, intrus].some(p => dans(p, 0, 3.5, 7, 9)), pres_chambre:+[marie, intrus].some(p => dans(p, 0, 0, 5, 3.5)), porte:+monde.porte, t:+monde.t.toFixed(2), h:Math.round(55 - (monde.t - 24) * 0.8), lum:monde.lum, gaz:Math.round(monde.gaz), solaire:+monde.solaire.toFixed(2), batterie:Math.round(monde.batterie) });
+
+// ===================== VUE ESP32-CAM =====================
+const camIA = new THREE.PerspectiveCamera(60, 4 / 3, 0.005, 3);
+const cible = new THREE.WebGLRenderTarget(320, 200);
+D.ecranPC.material.map = cible.texture; D.ecranPC.material.needsUpdate = true;
+let sourceCam = 'scene', flash = 0; const coulVision = new THREE.Color();
+function placerCam() { D.camCorps.updateWorldMatrix(true, false); camIA.position.copy(new THREE.Vector3(0, mm(8), mm(12)).applyMatrix4(D.camCorps.matrixWorld)); camIA.lookAt(new THREE.Vector3(0, mm(8), 0.3).applyMatrix4(D.camCorps.matrixWorld)); }
+function detections(dt) {
+  const b = [];
+  for (const p of [marie, intrus]) {
+    let vu = false;
+    if (p.g.visible && p.g.position.z > 8.6 * ECH) {
+      const t = p.g.position.clone(); t.y = Y0 + mm(75); const n = t.clone().project(camIA), h = t.clone().setY(Y0 + mm(84)).project(camIA);
+      if (n.z < 1 && Math.abs(n.x) < 0.95 && Math.abs(n.y) < 0.95 && t.distanceTo(camIA.position) < 0.4) { vu = true; b.push({ n, h:Math.abs(h.y - n.y), p, s:(p.connu ? 0.84 : 0.19) + Math.sin(performance.now() / 300) * 0.02 }); }
+    }
+    if (vu) { p.vu += dt; p.absent = 0; if (p.vu > 1 && !p.signale) { p.signale = true; if (sourceCam === 'scene' && mode !== 'miroir') bus.publier('vision', { resultat:p.connu ? 'connu' : 'inconnu', score:p.connu ? 0.84 : 0.19, source:'maquette3d' }); } }
+    else if ((p.absent += dt) > 1) { p.vu = 0; p.signale = false; }
+  }
+  return b;
+}
+function boites(b) {
+  const W = $('pip').clientWidth, H = $('pip').clientHeight;
+  $('pipDet').innerHTML = b.map(({ n, h, p, s }) => { const cx = (n.x + 1) / 2 * W, cy = (1 - n.y) / 2 * H, d = Math.max(10, h * H / 2 * 1.3), c = p.connu ? '#2b8a3e' : '#e03131';
+    return `<div class="det" style="left:${cx - d * 0.85}px;top:${cy - d}px;width:${d * 1.7}px;height:${d * 2}px;border-color:${c}"><span style="background:${c}">${p.connu ? 'Marie' : 'INCONNU'} ${s.toFixed(2)}</span></div>`; }).join('');
+}
+
+// ===================== BUS =====================
+const bus = new MaisonBus(); let mode = null, etat = null, dernierEtat = 0, emule = null, dernierEnvoi = 0, dernierSource = 0;
+const params = new URLSearchParams(location.search);
+$('maisonId').value = params.get('maison') || (() => { try { return localStorage.getItem('maisonId'); } catch (e) { return null; } })() || 'maison-ia-elnovic';
+function pastille(id, c, t) { const p = $(id); p.className = 'pill ' + c; p.querySelector('span').textContent = t; }
+bus.surStatut = (s, t) => pastille('pBus', s === 'ok' ? 'ok' : s === 'attente' ? 'warn' : 'err', t);
+bus.on((sub, txt) => {
+  if (sub === 'etat') { try { const e = JSON.parse(txt); if (etat) { for (const [k, id] of [['pres.salon', 'radar_salon'], ['pres.chambre', 'radar_chambre'], ['porte', 'ils_porte'], ['lumiere.salon', 'lampe_salon'], ['lumiere.chambre', 'lampe_chambre'], ['clim.ventilo', 'ventilateur'], ['clim.ventilo', 'relais'], ['clim.chauffage', 'chauffage'], ['alarme', 'sirene'], ['alarme', 'oled']]) { const v = o => k.split('.').reduce((a, c) => a?.[c], o); if (v(etat) !== v(e)) impulsion(id, 2); } } etat = e; dernierEtat = performance.now(); } catch (e) {} }
+  else if (sub === 'vision') { try { const v = JSON.parse(txt), c = v.resultat === 'connu'; flash = 3; coulVision.set(c ? 0x2b8a3e : 0xe03131); impulsion('camera'); impulsion('usb', 2); if (v.source === 'webcam' && mode === 'jumeau') { if (c && !marie.g.visible) bougerMarie('dehors'); if (!c && !intrus.g.visible) bougerIntrus('porte'); } } catch (e) {} }
+});
+function changerMode(m) {
+  if (m === mode) return; mode = m; sel('segMode', 'mode', m); etat = null; emule = null;
+  const id = $('maisonId').value.trim() || 'maison-ia-elnovic';
+  bus.connecter(m === 'local' ? 'local' : 'mqtt', id); if (m === 'local') emule = new FirmwareEmule(bus);
+  $('monde').classList.toggle('disabled', m === 'miroir'); if (m === 'miroir') { bougerMarie('absent'); bougerIntrus('absent'); }
+  $('modeNote').className = 'note' + (m === 'local' ? ' warn' : '');
+  $('modeNote').textContent = { jumeau:'La maquette virtuelle envoie ses capteurs au vrai firmware dans Wokwi. N\'ouvrez pas le jumeau 3D en même temps dans ce mode.', miroir:'La maquette 3D reproduit la vraie maquette du FabLab, capteur par capteur.', local:'Mode secours sans Internet : logique du firmware émulée en JavaScript.' }[m];
+  dernierSource = 0;
+}
+const cmd = (s, v) => bus.publier('cmd/' + s, String(v));
+
+// ===================== RENDU DE L'ÉTAT =====================
+const VIDE = { t:null, h:null, lum:60, gaz:0, pres:{ salon:0, chambre:0 }, lumiere:{ salon:0, chambre:0 }, clim:{ ventilo:0, chauffage:0, consigne:24 }, porte:0, alarme:'desarmee', cause:'', energie:{ solaire_w:0, batterie:0, eco:0, conso_w:0 } };
+const lerp = (a, b, k) => a + (b - a) * k;
+function appliquer(e, dt, t) {
+  const k = Math.min(1, dt * 5), jour = mode === 'miroir' ? e.lum / 100 : monde.lum / 100;
+  lampeAtelier.intensity = 0.25 + 2.2 * jour; hemi.intensity = 0.08 + 0.85 * jour;
+  for (const id of ['lampe_salon', 'lampe_chambre']) { const L = D['lampe_' + id]; L.v = lerp(L.v, e.lumiere[id.slice(6)] ? 1 : 0, k); L.m.emissiveIntensity = 0.15 + L.v * 4; L.p.intensity = L.v * 0.06; }
+  for (const [id, r] of [['radar_salon', 'salon'], ['radar_chambre', 'chambre']]) { const on = e.pres[r]; D['zone_' + id].material.opacity = on ? 0.12 + 0.05 * Math.sin(t * 6) : 0.03; D['led_' + id].m.emissiveIntensity = on ? 4 : 0.1; }
+  D.vitesse = lerp(D.vitesse, e.clim.ventilo ? 40 : 0, Math.min(1, dt * 1.5)); D.helice.rotation.z += D.vitesse * dt;
+  D.ledRelais.m.emissiveIntensity = e.clim.ventilo ? 4 : 0.1;
+  D.ledChauffe.m.emissiveIntensity = e.clim.chauffage ? 4 : 0.1; D.lumChauffe.intensity = e.clim.chauffage ? 0.02 : 0;
+  porte.rotation.y = lerp(porte.rotation.y, e.porte ? -1.4 : 0, Math.min(1, dt * 5));
+  const f = e.alarme === 'declenchee' ? (Math.sin(t * 20) > 0 ? 1 : 0) : e.alarme === 'verification' ? (Math.sin(t * 5) > 0.6 ? 0.5 : 0) : 0;
+  D.gyro.m.emissiveIntensity = 0.1 + f * 5; D.lumGyro.intensity = f * 0.08;
+  D.ledArmee.m.emissiveIntensity = e.alarme === 'armee' ? 3 : e.alarme === 'verification' ? f * 4 : 0.1;
+  D.ledGaz.m.emissiveIntensity = e.gaz >= 60 ? 4 : 0.1; D.gaz.material.opacity = lerp(D.gaz.material.opacity, Math.max(0, (e.gaz - 25) / 75) * 0.35, k);
+  D.ledEsp.m.emissiveIntensity = performance.now() - dernierEtat < 400 ? 5 : 0.3; D.ledPow.m.emissiveIntensity = 3; D.ledLdr.m.emissiveIntensity = e.lum < 40 ? 3 : 0.1;
+  D.ledCharge.m.emissiveIntensity = (e.energie.solaire_w || 0) > 0.5 ? 3 : 0.1;
+  if (flash > 0) { flash -= dt; D.zoneCam.material.color.copy(coulVision); D.zoneCam.material.opacity = 0.18; D.flash.m.emissiveIntensity = 2; } else { D.zoneCam.material.color.set(0xffffff); D.zoneCam.material.opacity = 0.05; D.flash.m.emissiveIntensity = 0.1; }
+}
+function valeurs(e) {
+  return { radar_salon:e.pres.salon ? 'présence' : 'vide', radar_chambre:e.pres.chambre ? 'présence' : 'vide', ldr:e.lum + ' %', dht22:e.t == null ? '–' : (+e.t).toFixed(1) + ' °C', mq2:e.gaz + ' %', ils_porte:e.porte ? 'ouverte' : 'fermée',
+    lampe_salon:e.lumiere.salon ? 'ON' : 'off', lampe_chambre:e.lumiere.chambre ? 'ON' : 'off', ventilateur:e.clim.ventilo ? 'ON' : 'off', relais:e.clim.ventilo ? 'fermé' : 'ouvert', chauffage:e.clim.chauffage ? 'ON' : 'off',
+    sirene:e.alarme === 'declenchee' ? 'ALARME' : '', bouton:'', oled:'', esp32:etat ? (etat.source === 'emule' ? 'émulé' : 'en ligne') : '–', camera:sourceCam === 'webcam' ? 'réelle' : '', pc_vision:'', panneau_solaire:(+e.energie.solaire_w).toFixed(1) + ' W', batterie:e.energie.batterie + ' %' };
+}
+function panneau(e) {
+  const v = valeurs(e); for (const [id, el] of Object.entries(TAGS)) el.textContent = v[id] ? ' ' + v[id] : '';
+  $('vT').textContent = e.t == null ? '–' : (+e.t).toFixed(1) + ' °C'; $('vL').textContent = e.lum + ' %'; $('vB').textContent = e.energie.batterie + ' %';
+  $('tA').className = 'tile span3 ' + e.alarme; $('vA').textContent = NOM_ALARME[e.alarme] + (e.cause && ['declenchee', 'verification'].includes(e.alarme) ? ' · ' + (NOM_CAUSE[e.cause] || e.cause) : '');
+  $('vP').textContent = [e.pres.salon && 'séjour', e.pres.chambre && 'chambre'].filter(Boolean).join(' · ') || 'personne';
+  const frais = performance.now() - dernierEtat < 6000;
+  if (!etat) pastille('pEsp', mode === 'jumeau' ? 'warn' : 'err', mode === 'jumeau' ? 'Lancez Wokwi' : 'Aucune donnée');
+  else pastille('pEsp', frais ? 'ok' : 'err', frais ? ({ jumeau:'Firmware · capteurs 3D', materiel:'Firmware · maquette réelle', emule:'Émulation' }[etat.source] || 'En ligne') : 'Hors ligne');
+  if (infoObjet) info(infoObjet);
+}
+function oled(e) {
+  const { c, t } = D.oled, g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#9fdcff'; g.font = '15px monospace';
+  [`${bus.connecte ? 'WiFi MQTT' : '---- ----'} ${e.source === 'jumeau' ? '[3D]' : e.source === 'materiel' ? '[REEL]' : ''}`, e.t == null ? 'T: --.- C' : `T:${(+e.t).toFixed(1)}C  H:${Math.round(e.h)}%`, `Lum:${e.lum}%  Gaz:${e.gaz}%`, `Clim:${e.clim.ventilo ? 'VENTILO' : e.clim.chauffage ? 'CHAUFFE' : 'repos'}`, `Bat:${e.energie.batterie}%`, `Porte:${e.porte ? 'OUVERTE' : 'fermee'}`, `Alarme:${{ desarmee:'Desarmee', armee:'ARMEE', verification:'VERIF...', declenchee:'!! ALARME !!' }[e.alarme]}`].forEach((s, i) => g.fillText(s, 6, 16 + i * 17));
+  t.needsUpdate = true;
+}
+
+// ===================== INTERFACE =====================
+function sel(id, a, v) { for (const b of $(id).querySelectorAll('button')) b.classList.toggle('on', b.dataset[a] === v); }
+$('segMode').onclick = ev => { const b = ev.target.closest('button'); if (b) changerMode(b.dataset.mode); };
+$('maisonId').onchange = () => { const m = mode; mode = null; changerMode(m); };
+$('segMarie').onclick = ev => { const b = ev.target.closest('button'); if (b) bougerMarie(b.dataset.p); };
+$('segIntrus').onclick = ev => { const b = ev.target.closest('button'); if (b) bougerIntrus(b.dataset.p); };
+$('bArmer').onclick = () => cmd('alarme', 'armer'); $('bDesarmer').onclick = () => cmd('alarme', 'desarmer');
+$('bGaz').onclick = () => { monde.fuite = !monde.fuite; $('bGaz').textContent = monde.fuite ? 'Éloigner le briquet' : 'Approcher un briquet du MQ-2'; };
+const CUR = [['sLum', 'oLum', 'lum', ' %'], ['sText', 'oText', 'text', ' °C']];
+function lireCur() { for (const [s, o, k, u] of CUR) { monde[k] = +$(s).value; $(o).textContent = $(s).value + u; } }
+for (const [s] of CUR) $(s).oninput = lireCur; lireCur();
+$('segCam').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; sourceCam = b.dataset.c; sel('segCam', 'c', sourceCam); const w = sourceCam === 'webcam'; $('pipImg').classList.toggle('hide', !w); $('pipDet').innerHTML = ''; if (w) $('pipImg').src = $('fluxUrl').value; else $('pipImg').removeAttribute('src'); $('pipSrc').textContent = w ? 'flux réel · Python OpenCV' : 'vision simulée'; };
+$('cFils').onchange = e => { fils.visible = filsPC.visible = e.target.checked; };
+$('cTags').onchange = e => $('labels').classList.toggle('hide', !e.target.checked);
+$('cToit').onchange = e => { toit.visible = e.target.checked; };
+$('cZones').onchange = e => { for (const z of zones) z.visible = e.target.checked; };
+for (const z of zones) z.visible = false;
+const VUES = { ensemble:[[0.15, 0.62, 0.95], [0.3, 0.03, 0.24]], dessus:[[0.3, 0.85, 0.27], [0.3, 0, 0.225]], sejour:[[0.12, 0.26, 0.62], [0.17, 0.04, 0.3]], entree:[[0.48, 0.16, 0.72], [0.42, 0.08, 0.44]], technique:[[0.7, 0.2, 0.36], [0.54, 0.02, 0.34]], pc:[[0.78, 0.3, 0.62], [0.86, 0.1, 0.28]] };
+let vue = null; for (const b of document.querySelectorAll('[data-view]')) b.onclick = () => { vue = VUES[b.dataset.view]; };
+controls.addEventListener('start', () => { vue = null; });
+// Nomenclature
+$('bom').innerHTML = PLAN.objets.filter(o => POS[o.id]).map(o => `<tr><td><b>${o.nom}</b><br><span style="color:var(--mute)">${DIM[o.id] || ''}</span></td><td>${o.broche}</td></tr>`).join('');
+// Fiches au clic
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let infoObjet = null, appui = null;
+renderer.domElement.addEventListener('pointerdown', e => { appui = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!appui || Math.hypot(e.clientX - appui[0], e.clientY - appui[1]) > 5) return;
+  const r = renderer.domElement.getBoundingClientRect(); ptr.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ptr, camera); const h = ray.intersectObjects(cliquables, false).find(h => h.object.visible);
+  if (h) { infoObjet = h.object.userData.objet; info(infoObjet); }
+});
+$('info').querySelector('button').onclick = () => { infoObjet = null; $('info').classList.remove('on'); };
+function info(o) {
+  $('infoBody').innerHTML = `<h3></h3><p class="note" id="iR"></p><dl><dt>Taille réelle</dt><dd id="iD"></dd><dt>Branchement</dt><dd id="iB"></dd><dt>Valeur</dt><dd id="iV"></dd></dl>`;
+  $('infoBody').querySelector('h3').textContent = o.nom; $('iR').textContent = o.role; $('iD').textContent = DIM[o.id] || '–'; $('iB').textContent = o.broche; $('iV').textContent = valeurs(etat || VIDE)[o.id] || '–';
+  $('info').classList.add('on');
+}
+// Scénario
+let ids = 0; const dire = t => { $('caption').textContent = t; $('caption').classList.toggle('on', !!t); };
+async function scenario() {
+  const id = ++ids, att = s => new Promise((ok, ko) => setTimeout(() => id === ids ? ok() : ko(), s * 1000));
+  $('bScenario').textContent = '■ Arrêter';
+  try {
+    bougerMarie('absent'); bougerIntrus('absent'); monde.fuite = false; $('sLum').value = 20; $('sText').value = 31; lireCur(); monde.t = 29;
+    cmd('lumiere/salon', 'auto'); cmd('lumiere/chambre', 'auto'); cmd('clim', 'auto'); cmd('alarme', 'desarmer'); await att(1); cmd('alarme', 'armer');
+    vue = VUES.ensemble; dire('La maquette au 1/20 : carton, plexiglas, et les vrais modules électroniques que nous utiliserons au FabLab.'); await att(6);
+    vue = VUES.technique; dire('Dans le local technique : l\'ESP32 sur sa plaque d\'essai, le relais, et la batterie 18650 chargée par le panneau solaire.'); await att(7);
+    vue = VUES.entree; bougerMarie('dehors'); dire('Marie arrive : l\'ESP32-CAM filme, le PC reconnaît son visage, et l\'alarme se désarme.'); await att(7);
+    bougerMarie('sejour'); vue = VUES.sejour; dire('Le radar LD2410 la détecte et il fait sombre (LDR) : la LED du séjour s\'allume.'); await att(6);
+    dire('29 °C mesurés par le DHT22 : le relais alimente le ventilateur 40 mm.'); await att(8);
+    bougerMarie('chambre'); vue = VUES.dessus; dire('Dans la chambre, la deuxième LED s\'allume ; celle du séjour s\'éteint 10 s plus tard.'); await att(13);
+    bougerMarie('dehors'); vue = VUES.ensemble; dire('Marie sort et arme l\'alarme depuis le site de contrôle.'); await att(5);
+    cmd('alarme', 'armer'); bougerMarie('absent'); dire('Délai de sortie de 15 s…'); await att(16);
+    vue = VUES.entree; bougerIntrus('porte'); dire('Un inconnu : visage non reconnu, le buzzer sonne et la LED rouge clignote.'); await att(8);
+    cmd('alarme', 'desarmer'); bougerIntrus('absent'); dire('Fin de la démonstration.'); await att(3);
+  } catch (e) {}
+  if (id === ids) { ids++; dire(''); $('bScenario').textContent = '▶ Scénario'; }
+}
+$('bScenario').onclick = () => { if ($('bScenario').textContent.startsWith('■')) { ids++; dire(''); $('bScenario').textContent = '▶ Scénario'; } else scenario(); };
+
+// ===================== BOUCLE =====================
+function redim() { const w = host.clientWidth, h = host.clientHeight; renderer.setSize(w, h); tagR.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(redim).observe(host); redim(); $('loading').remove();
+changerMode(params.get('mode') || 'local');
+function etapeMonde(dt) {
+  if (mode !== 'miroir') { marcher(marie, dt); marcher(intrus, dt); majMonde(dt, etat); const n = performance.now(); if (n - dernierEnvoi > 200) { dernierEnvoi = n; bus.publier('capteurs/virtuels', capteurs()); } if (emule) emule.boucle(dt); }
+  if (mode !== 'local' && bus.connecte && performance.now() - dernierSource > 5000) { dernierSource = performance.now(); bus.publier('cmd/source', mode === 'jumeau' ? 'jumeau' : 'materiel'); }
+}
+let tF = performance.now(); setInterval(() => { const n = performance.now(); if (document.hidden) etapeMonde(Math.min(1.5, (n - tF) / 1000)); tF = n; }, 250);
+const horloge = new THREE.Clock(); let img = 0, tUI = 0, tO = 0;
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(horloge.getDelta(), 0.1), t = horloge.elapsedTime; img++;
+  if (vue) { const p = new THREE.Vector3(...vue[0]), c = new THREE.Vector3(...vue[1]); camera.position.lerp(p, Math.min(1, dt * 2.5)); controls.target.lerp(c, Math.min(1, dt * 2.5)); if (camera.position.distanceTo(p) < 0.002) vue = null; }
+  etapeMonde(dt);
+  const e = etat || VIDE; appliquer(e, dt, t); majImpulsions(dt); placerCam();
+  if (img % 15 === 0) for (const id of ['radar_salon', 'dht22', 'ldr']) impulsion(id);
+  if ((tUI -= dt) <= 0) { tUI = 0.25; panneau(e); } if ((tO -= dt) <= 0) { tO = 0.5; oled(e); }
+  controls.update();
+  const w = host.clientWidth, h = host.clientHeight; renderer.setViewport(0, 0, w, h); renderer.setScissorTest(false); renderer.render(scene, camera);
+  const zv = D.zoneCam.visible; D.zoneCam.visible = false; const fv = fils.visible; fils.visible = false;
+  const b = detections(dt);
+  if (sourceCam === 'scene') { const r = $('pip').getBoundingClientRect(), hr = host.getBoundingClientRect(), x = r.left - hr.left, y = hr.bottom - r.bottom; camIA.aspect = r.width / r.height; camIA.updateProjectionMatrix(); renderer.setScissorTest(true); renderer.setScissor(x, y, r.width, r.height); renderer.setViewport(x, y, r.width, r.height); renderer.render(scene, camIA); renderer.setScissorTest(false); renderer.setViewport(0, 0, w, h); boites(b); }
+  if (img % 4 === 0) { camIA.aspect = 1.6; camIA.updateProjectionMatrix(); renderer.setRenderTarget(cible); renderer.render(scene, camIA); renderer.setRenderTarget(null); }
+  D.zoneCam.visible = zv; fils.visible = fv;
+  tagR.render(scene, camera);
+});
+}
+</script>
+</body>
+</html>

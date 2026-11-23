@@ -25,7 +25,7 @@ Préfixe : `maison-ia/<MAISON_ID>`, par exemple `maison-ia/maison-ia-elnovic`.
 ```
 
 - `alarme` : `desarmee` · `armee` · `verification` (15 s laissées à la caméra) · `declenchee`.
-- `cause` : `porte` · `presence` · `intrus` · `gaz`.
+- `cause` : `porte` · `presence` · `intrus` · `gaz` · `panique`.
 - `wh_ref` : ce qu'aurait consommé une maison **sans automatisme** (lampes allumées dès qu'il fait sombre, climatisation selon la seule température). L'économie affichée vaut `1 − wh / wh_ref`.
 - `source` : `jumeau` (capteurs virtuels du jumeau 3D) ou `materiel` (broches réelles).
 
@@ -36,7 +36,7 @@ Préfixe : `maison-ia/<MAISON_ID>`, par exemple `maison-ia/maison-ia-elnovic`.
 | `…/cmd/lumiere/salon`, `…/cmd/lumiere/chambre` | `auto` · `on` · `off` | Site de contrôle |
 | `…/cmd/clim` | `auto` · `off` | Site de contrôle |
 | `…/cmd/consigne` | `16` à `30` (°C) | Site de contrôle |
-| `…/cmd/alarme` | `armer` · `desarmer` · `stop` | Site, jumeau |
+| `…/cmd/alarme` | `armer` · `desarmer` · `stop` · `panique` (SOS) | Site, jumeau |
 | `…/cmd/source` | `jumeau` · `materiel` | Jumeau 3D (toutes les 5 s) |
 | `…/capteurs/virtuels` | `{"pres_salon":1,"pres_chambre":0,"porte":0,"t":26.4,"h":53,"lum":12,"gaz":0,"solaire":0.4,"batterie":71}` | Jumeau 3D (5 fois par seconde) |
 | `…/vision` | `{"resultat":"connu","score":0.84,"source":"webcam"}` | Python (`webcam`) ou jumeau 3D (`jumeau3d`) |

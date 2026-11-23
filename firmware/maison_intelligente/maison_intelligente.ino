@@ -358,9 +358,17 @@ void majSortiesAlarme(unsigned long now) {
   buzzer(f);
 }
 
+// Bouton de l'entrée : appui court = armer / désarmer ; appui long (3 s) = alarme panique
+unsigned long debutAppui = 0;
+bool paniqueEnvoyee = false;
 void lireBouton(unsigned long now) {
   bool b = digitalRead(PIN_BOUTON);
-  if (b == LOW && boutonPrecedent == HIGH && now - dernierAppui > 250) {
+  if (b == LOW && boutonPrecedent == HIGH) { debutAppui = now; paniqueEnvoyee = false; }
+  if (b == LOW && !paniqueEnvoyee && now - debutAppui > 3000) {
+    paniqueEnvoyee = true;
+    changerAlarme(DECLENCHEE, "panique");
+  }
+  if (b == HIGH && boutonPrecedent == LOW && !paniqueEnvoyee && now - debutAppui > 40 && now - dernierAppui > 250) {
     dernierAppui = now;
     if (alarme == DESARMEE) armer(); else desarmer();
   }
@@ -388,6 +396,7 @@ void recevoirMessage(char* topic, byte* charge, unsigned int longueur) {
   else if (t == base + "/cmd/alarme") {
     if (m == "armer") armer();
     else if (m == "desarmer" || m == "stop") desarmer();
+    else if (m == "panique") changerAlarme(DECLENCHEE, "panique");  // bouton SOS du site
   }
   else if (t == base + "/cmd/source") {
     sourceJumeau = (m == "jumeau");

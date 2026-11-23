@@ -55,7 +55,7 @@
       if (sub === 'cmd/lumiere/salon' || sub === 'cmd/lumiere/chambre') this.p[sub.endsWith('salon') ? 'salon' : 'chambre'].mode = ['on', 'off'].includes(m) ? m : 'auto';
       else if (sub === 'cmd/clim') this.climAuto = m !== 'off';
       else if (sub === 'cmd/consigne') { const c = parseFloat(m); if (c >= 16 && c <= 30) this.consigne = c; }
-      else if (sub === 'cmd/alarme') { if (m === 'armer') { if (this.alarme === 'desarmee') this.changerAlarme('armee'); } else if (m === 'desarmer' || m === 'stop') this.changerAlarme('desarmee'); }
+      else if (sub === 'cmd/alarme') { if (m === 'armer') { if (this.alarme === 'desarmee') this.changerAlarme('armee'); } else if (m === 'desarmer' || m === 'stop') this.changerAlarme('desarmee'); else if (m === 'panique') this.changerAlarme('declenchee', 'panique'); }
       else if (sub === 'vision') { if (m.includes('inconnu')) this.resultatVision(false); else if (m.includes('connu')) this.resultatVision(true); }
       else return;
       this.modifie = true;

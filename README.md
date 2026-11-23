@@ -38,11 +38,13 @@ flowchart LR
 |---|---|
 | [`plan/`](plan/) | Plan unique de la maison + plans de fabrication générés (découpe laser 1/20, câblage) |
 | [`firmware/`](firmware/) | Firmware ESP32 (Arduino) + circuit **Wokwi** |
-| [`jumeau-3d/`](jumeau-3d/) | Jumeau numérique : 19 composants IoT modélisés et cliquables, câblage animé, caméra avec vision IA, scénario de présentation |
-| [`site-controle/`](site-controle/) | Site de pilotage (téléphone) : alarme, lumières, climat, énergie, caméra en direct, graphiques temps réel |
+| [`jumeau-3d/`](jumeau-3d/) | Jumeau numérique : la maison grandeur nature, 19 composants IoT cliquables, câblage animé, caméra avec vision IA |
+| [`maquette-3d/`](maquette-3d/) | La maquette FabLab en carton au 1/20, avec les vrais modules à leur taille réelle et les fils Dupont |
+| [`site-controle/`](site-controle/) | Site de pilotage responsive (ordinateur et téléphone) : alarme avec code et SOS, lumières, climat, énergie, caméra en direct, analyses |
+| [`presentation/`](presentation/) | Présentation de 26 diapositives, avec la photo et le fonctionnement de chaque composant, et les notes de l'orateur |
 | [`vision/`](vision/) | Reconnaissance faciale OpenCV (YuNet + SFace), flux vidéo annoté, alertes Telegram |
 | [`web/`](web/) | Code commun aux pages web (connexion MQTT, émulation hors ligne) |
-| [`docs/`](docs/) | Messages MQTT, matériel, protection des données |
+| [`docs/`](docs/) | [Mise en ligne et travail à deux](docs/deploiement.md), [guide de présentation](docs/guide-presentation.md), [messages MQTT](docs/mqtt.md), [matériel](docs/materiel.md), [RGPD](docs/rgpd.md) |
 
 ## Les trois modes du jumeau 3D
 
@@ -54,12 +56,12 @@ flowchart LR
 
 ## Démarrage
 
-1. **Mettre les pages en ligne** : GitHub → *Settings* → *Pages* → *Deploy from branch* → `main` / racine. La page d'accueil sera `https://elnovic.github.io/maison-intelligente-3d/`.
-   Ou, en local : `python -m http.server 8000` à la racine du dépôt, puis ouvrez <http://localhost:8000>.
+1. **Mettre les pages en ligne** : GitHub → *Settings* → *Pages* → *Deploy from branch* → `main` / racine. Le projet sera accessible partout sur `https://elnovic.github.io/MAISON-INTELLIGENTE-3D/` (voir [docs/deploiement.md](docs/deploiement.md)).
+   Ou, en local sous Windows : double-cliquez sur `lancer-site-local.bat`.
 2. **Lancer le firmware dans Wokwi** : suivez [`firmware/README.md`](firmware/README.md).
 3. **Ouvrir le jumeau 3D**, choisir *Simulation · firmware ESP32*. La pastille passe à « Firmware ESP32 · capteurs 3D ».
 4. **Ouvrir le site de contrôle** (bouton dans le jumeau), sur un ordinateur ou un téléphone.
-5. **Caméra IA** : `python vision/surveillance.py` (voir [`vision/README.md`](vision/README.md)), puis choisissez *Webcam réelle (Python)* dans le jumeau.
+5. **Caméra IA** : dans `vision/`, double-cliquez sur `1-installer.bat`, `2-chercher-camera.bat`, `3-enregistrer-resident.bat`, puis `4-lancer-surveillance.bat` (voir [`vision/README.md`](vision/README.md)). Webcam USB, ESP32-CAM ou téléphone.
 
 > L'identifiant `maison-ia-elnovic` doit être le même dans `config.h`, `vision/config.ini`, le jumeau 3D et le site.
 
@@ -79,4 +81,5 @@ flowchart LR
 - [x] Jumeau 3D avec composants IoT, câblage, caméra et vision
 - [x] Site de contrôle et analyses en temps réel
 - [x] Vision par ordinateur + Telegram
+- [x] Maquette carton en 3D, présentation, déploiement en ligne
 - [ ] FabLab : découpe laser, câblage, remplacement des potentiomètres par le vrai INA219 et le vrai MQ-2

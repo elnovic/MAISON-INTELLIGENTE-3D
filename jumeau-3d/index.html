@@ -184,6 +184,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
     <div class="btns" style="margin-top:8px">
       <button class="btn primary" id="bArmer">Armer l'alarme</button><button class="btn" id="bDesarmer">Désarmer</button>
       <a class="btn" id="lienSite" href="../site-controle/index.html" target="_blank" rel="noopener">Site de contrôle ↗</a>
+      <a class="btn" href="../maquette-3d/index.html">Maquette carton</a>
     </div>
 
     <div id="monde">
@@ -229,7 +230,7 @@ const PLAN = window.PLAN, H = PLAN.hauteur_murs;
 const $ = id => document.getElementById(id);
 const COUL = { capteur:0x1f77b4, actionneur:0xe8590c, controleur:0x2b8a3e, energie:0xc92a2a, vision:0x7048e8 };
 const NOM_ALARME = { desarmee:'Désarmée', armee:'Armée', verification:'Vérification…', declenchee:'ALARME' };
-const NOM_CAUSE = { porte:'porte ouverte', presence:'présence détectée', intrus:'visage inconnu', gaz:'gaz détecté' };
+const NOM_CAUSE = { porte:'porte ouverte', presence:'présence détectée', intrus:'visage inconnu', gaz:'gaz détecté', panique:'alarme SOS' };
 const OBJ = Object.fromEntries(PLAN.objets.map(o => [o.id, o]));
 
 // =====================================================================
@@ -835,7 +836,7 @@ function evenement(type, detail = '') {
     declenchee:`ALARME DÉCLENCHÉE : ${NOM_CAUSE[detail] || detail}`, bienvenue:'Résident reconnu : alarme désarmée automatiquement',
     visiteur:'Visage inconnu à la porte (alarme désarmée)', energie:'Énergie : ' + detail }[type] || `${type} ${detail}`;
   journal(txt); impulsion('sirene');
-  if (type === 'declenchee') notif(detail === 'gaz' ? 'Gaz détecté dans la cuisine ! Sirène activée.' : 'Intrusion détectée ! Photo jointe, sirène activée.');
+  if (type === 'declenchee') notif(detail === 'gaz' ? 'Gaz détecté dans la cuisine ! Sirène activée.' : detail === 'panique' ? 'Alarme SOS déclenchée depuis la maison !' : 'Intrusion détectée ! Photo jointe, sirène activée.');
   if (type === 'visiteur') notif('Quelqu\'un d\'inconnu se présente à la porte.');
   if (type === 'bienvenue') notif('Un résident est rentré. Alarme désarmée.');
 }

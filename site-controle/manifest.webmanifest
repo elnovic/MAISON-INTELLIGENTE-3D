@@ -1,0 +1,10 @@
+{
+  "name": "Ma maison intelligente",
+  "short_name": "Ma maison",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111418",
+  "theme_color": "#111418",
+  "lang": "fr",
+  "icons": [{ "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

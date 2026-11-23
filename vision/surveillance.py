@@ -27,11 +27,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
 
-from commun import Vision, charger_base, charger_config, dessiner, identifier, ouvrir_camera
+from camera import depuis_config
+from commun import Vision, charger_base, charger_config, dessiner, identifier
 from telegram_bot import Telegram
 
 p = argparse.ArgumentParser()
-p.add_argument("--source", help="webcam (0), fichier vidéo ou URL de flux")
+p.add_argument("--source", help="auto, numéro de webcam (0, 1…), URL (ESP32-CAM, téléphone, RTSP) ou fichier vidéo")
 p.add_argument("--sans-mqtt", action="store_true")
 p.add_argument("--sans-affichage", action="store_true")
 p.add_argument("--port-flux", type=int, default=8081, help="port du flux vidéo MJPEG (0 = désactivé)")
@@ -75,7 +76,8 @@ def sur_message(_c, _u, msg):
         if type_ == "declenchee":
             texte = {"gaz": "ALERTE GAZ dans la maison !", "intrus": "INTRUSION : visage inconnu à la porte !",
                      "porte": "INTRUSION : porte ouverte sans résident reconnu !",
-                     "presence": "INTRUSION : présence détectée dans la maison !"}.get(detail, f"ALARME : {detail}")
+                     "presence": "INTRUSION : présence détectée dans la maison !",
+                     "panique": "ALERTE SOS déclenchée depuis la maison !"}.get(detail, f"ALARME : {detail}")
             if derniere_image is not None and detail != "gaz":
                 telegram.photo(jpeg(derniere_image), texte)
             else:
@@ -160,18 +162,19 @@ if a.port_flux:
 # ----------------------------------------------------------------------
 #  Boucle vidéo
 # ----------------------------------------------------------------------
-source = a.source or cfg.get("camera", "source", fallback="0")
-cap = ouvrir_camera(source, cfg.getint("camera", "largeur", fallback=640), cfg.getint("camera", "hauteur", fallback=480))
+cap = depuis_config(cfg, a.source)
 serie = {"connu": 0, "inconnu": 0}
 dernier_envoi = {"connu": 0.0, "inconnu": 0.0}
 images, t0, fps = 0, time.time(), 0.0
 print("Surveillance démarrée. Q pour quitter.")
 
 while True:
-    ok, image = cap.read()
-    if not ok:
-        print("Fin du flux vidéo.")
-        break
+    image = cap.lire()
+    if image is None:
+        if cap.est_fichier:
+            print("Fin du fichier vidéo.")
+            break
+        continue  # caméra momentanément muette : la reconnexion est automatique
     derniere_image = image.copy()
     visages = vision.visages(image)
 
@@ -213,7 +216,7 @@ while True:
         if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
             break
 
-cap.release()
+cap.fermer()
 cv2.destroyAllWindows()
 if client is not None:
     client.publish(f"{BASE_TOPIC}/vision/etat", "offline", retain=True)

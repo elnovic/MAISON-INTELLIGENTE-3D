@@ -53,6 +53,24 @@ Pour simuler la caméra sans Python, publiez `{"resultat":"inconnu"}` sur `maiso
 
 > Les entrées analogiques sont sur l'ADC1 (GPIO 32 à 39), car l'ADC2 ne fonctionne pas quand le WiFi est actif.
 
+## Bouton de l'entrée
+
+- **Appui court** : armer ou désarmer l'alarme.
+- **Appui de 3 s** : alarme SOS, déclenchée même si l'alarme est désarmée.
+
+Le site de contrôle envoie la même alarme SOS (`cmd/alarme = panique`).
+
+## Caméra de la maquette : ESP32-CAM
+
+Le dossier [`esp32cam_flux/`](esp32cam_flux/esp32cam_flux.ino) contient le programme de la caméra :
+
+1. IDE Arduino → carte **AI Thinker ESP32-CAM**.
+2. Mettez le nom et le mot de passe du WiFi en haut du fichier.
+3. Téléversez avec un adaptateur USB-série (GPIO 0 relié à GND pendant le téléversement), puis appuyez sur RESET.
+4. Le moniteur série affiche `Flux vidéo : http://192.168.x.x:81/stream`. Copiez cette adresse dans `vision/config.ini` (`source = …`).
+
+Alimentez l'ESP32-CAM avec un bon 5 V (batterie USB) : un port USB d'ordinateur trop faible fait redémarrer la caméra.
+
 ## Sur la vraie carte (FabLab)
 
 1. Arduino IDE → installez le support **ESP32** (Espressif) et les 4 bibliothèques de `libraries.txt`.

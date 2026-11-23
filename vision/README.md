@@ -7,7 +7,35 @@ Reconnaissance des visages en **Python + OpenCV**, avec deux modèles officiels 
 
 Une décision n'est prise qu'après **6 images consécutives** concordantes, ce qui évite les fausses alertes.
 
-## Installation (une fois)
+## Installation rapide sous Windows
+
+Double-cliquez dans l'ordre sur :
+
+1. `1-installer.bat` : crée l'environnement Python, installe OpenCV et télécharge les modèles ;
+2. `2-chercher-camera.bat` : trouve vos caméras et affiche une image de chacune ;
+3. `3-enregistrer-resident.bat` : enregistre un résident (demande le prénom) ;
+4. `4-lancer-surveillance.bat` : lance la surveillance.
+
+## Choisir sa caméra physique
+
+Dans `config.ini`, section `[camera]`, ligne `source =` :
+
+| Caméra | Valeur |
+|---|---|
+| Première webcam trouvée | `auto` (par défaut) |
+| Caméra intégrée du portable | `0` |
+| Webcam USB | `1` (ou le numéro donné par `lister_cameras.py`) |
+| ESP32-CAM de la maquette | `http://192.168.1.50:81/stream` (adresse affichée par l'ESP32-CAM au démarrage) |
+| Téléphone Android, appli « IP Webcam » | `http://192.168.1.20:8080/video` |
+| Caméra de surveillance IP | `rtsp://utilisateur:motdepasse@192.168.1.60/stream` |
+
+Options utiles : `rotation = 180` si l'image est à l'envers, `miroir = yes` pour un effet miroir.
+
+Si le câble USB est débranché ou si le WiFi de l'ESP32-CAM coupe, la caméra est **rouverte automatiquement**. Pour tester une caméra réseau : `python lister_cameras.py --tester http://…`.
+
+Le firmware de l'ESP32-CAM est dans [`../firmware/esp32cam_flux/`](../firmware/esp32cam_flux/esp32cam_flux.ino).
+
+## Installation manuelle (une fois)
 
 ```bash
 cd vision
